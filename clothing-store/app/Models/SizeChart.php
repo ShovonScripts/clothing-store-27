@@ -4,19 +4,26 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SizeChart extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
-        'table_json',
-        'note',
+        'name_bn',
+        'headers',
+        'rows',
+        'is_active',
     ];
 
     protected $casts = [
-        'table_json' => 'array',
+        'headers' => 'array',
+        'rows' => 'array',
+        'is_active' => 'boolean',
     ];
 
     public function products(): HasMany

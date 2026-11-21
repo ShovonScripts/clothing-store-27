@@ -12,9 +12,11 @@ return new class extends Migration
     {
         Schema::create('size_charts', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // e.g., "T-Shirt / Polo (inches)"
-            $table->json('table_json'); // columns + rows
-            $table->text('note')->nullable();
+            $table->string('name');
+            $table->string('name_bn')->nullable();
+            $table->json('headers');
+            $table->json('rows');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

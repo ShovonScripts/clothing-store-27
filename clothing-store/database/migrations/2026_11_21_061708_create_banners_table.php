@@ -13,10 +13,11 @@ return new class extends Migration
         Schema::create('banners', function (Blueprint $table) {
             $table->id();
             $table->string('title')->nullable();
-            $table->string('image_desktop')->nullable();
-            $table->string('image_mobile')->nullable();
-            $table->string('link_url')->nullable();
-            $table->enum('position', ['hero', 'strip', 'popup'])->default('hero');
+            $table->string('subtitle')->nullable();
+            $table->string('button_text')->nullable();
+            $table->string('button_link')->nullable();
+            $table->string('image_path')->nullable();
+            $table->string('placement')->default('hero');
             $table->unsignedInteger('sort_order')->default(0);
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('ends_at')->nullable();

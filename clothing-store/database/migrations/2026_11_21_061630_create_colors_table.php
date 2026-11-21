@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name_bn')->nullable();
             $table->string('hex', 7)->nullable();
             $table->unsignedInteger('sort_order')->default(0);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

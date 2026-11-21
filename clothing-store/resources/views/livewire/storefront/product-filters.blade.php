@@ -2,7 +2,7 @@
     <div class="border-b border-gray-200 pb-4">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold text-gray-900">{{ __('Filters') }}</h2>
-            @if($filters->hasActiveFilters())
+            @if($this->hasActiveFilters())
                 <button wire:click="clearFilters" class="text-sm text-primary hover:underline">{{ __('Clear all') }}</button>
             @endif
         </div>
@@ -12,7 +12,7 @@
                 <label class="block text-sm font-medium text-gray-900 mb-2">{{ __('Category') }}</label>
                 <select wire:model="categorySlug" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                     <option value="">{{ __('All Categories') }}</option>
-                    @foreach($filters->categories as $category)
+                    @foreach($this->categories as $category)
                         <option value="{{ $category->slug }}">{{ $category->display_name }}</option>
                         @foreach($category->activeChildren as $child)
                             <option value="{{ $child->slug }}">&nbsp;&nbsp;{{ $child->display_name }}</option>
@@ -24,7 +24,7 @@
             <div>
                 <label class="block text-sm font-medium text-gray-900 mb-2">{{ __('Colors') }}</label>
                 <div class="flex flex-wrap gap-2">
-                    @foreach($filters->colors as $color)
+                    @foreach($this->colors as $color)
                         <label class="inline-flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" wire:model="colors" value="{{ $color->id }}" class="rounded border-gray-300 text-primary focus:ring-primary">
                             <span class="w-5 h-5 rounded-full border" style="background-color: {{ $color->hex }}"></span>
@@ -54,8 +54,8 @@
                     <input type="number" wire:model.debounce.300ms="priceMax" placeholder="Max" min="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                 </div>
                 <div class="mt-2">
-                    <input type="range" wire:model.debounce.300ms="priceMin" min="{{ $filters->priceRange['min'] }}" max="{{ $filters->priceRange['max'] }}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary">
-                    <input type="range" wire:model.debounce.300ms="priceMax" min="{{ $filters->priceRange['min'] }}" max="{{ $filters->priceRange['max'] }}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary">
+                    <input type="range" wire:model.debounce.300ms="priceMin" min="{{ $this->priceRange['min'] }}" max="{{ $this->priceRange['max'] }}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary">
+                    <input type="range" wire:model.debounce.300ms="priceMax" min="{{ $this->priceRange['min'] }}" max="{{ $this->priceRange['max'] }}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary">
                 </div>
             </div>
 
