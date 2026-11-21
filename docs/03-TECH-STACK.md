@@ -2,7 +2,9 @@
 
 ## 1. Decision
 
-**Laravel 12 + Blade + Livewire 3 + Alpine.js + Tailwind CSS + Filament 4 (admin) + MySQL.**
+**Laravel 12 + Blade + Livewire 4 + Alpine.js + Tailwind CSS + Filament 5 (admin) + MySQL.**
+
+> **Note:** The docs originally specified Livewire 3 and Filament 4, but these are incompatible with Laravel 12 (Livewire 3.x requires Laravel ^10|^11; Filament 4 requires Livewire ^3.5). We use Livewire 4.x and Filament 5.x which support Laravel 12 and PHP 8.2+. The API and concepts are largely compatible.
 
 ### Why this wins for this project
 | Requirement | Why this stack fits |
@@ -24,15 +26,15 @@
 
 **Required**
 - `laravel/framework ^12`
-- `livewire/livewire ^3`
-- `filament/filament ^4` (admin only, at `/admin`)
+- `livewire/livewire ^4.4`
+- `filament/filament ^5.11` (admin only, at `/admin`)
 - `spatie/laravel-medialibrary` (images + conversions: thumb 400w, card 600w, large 1200w, WebP)
 - `spatie/laravel-permission` (roles: owner, manager, staff) — or Filament Shield
 - `spatie/laravel-activitylog` (who approved/rejected what)
 - `spatie/laravel-sluggable`
 - `intervention/image` (via Media Library driver) — GD or Imagick
 - `mpdf/mpdf` (**invoice PDF with Bangla text** — dompdf has poor Bangla shaping; use mPDF with Noto Sans Bengali / Kalpurush, or generate printable HTML + browser print)
-- `pestphp/pest` + `pest-plugin-laravel` + `pest-plugin-livewire`
+- `pestphp/pest ^3.8` + `pestphp/pest-plugin-laravel ^3.2` + `pestphp/pest-plugin-livewire ^3.0`
 - `laravel/pint`
 
 **Optional / later**

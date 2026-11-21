@@ -1,4 +1,6 @@
-# 07 — Admin Panel (Filament 4)
+# 07 — Admin Panel (Filament 5)
+
+> **Note:** Originally specified Filament 4, but upgraded to Filament 5 for Laravel 12 compatibility. The UI components, table/filters/actions APIs are largely compatible with minor syntax differences.
 
 Panel path: `/admin`. Guard: `web` with `users` table. Mobile-friendly usage is a hard requirement (owner approves orders from a phone).
 
