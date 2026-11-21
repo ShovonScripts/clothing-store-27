@@ -72,6 +72,10 @@ class ProductGallery extends Component
     {
         return view('livewire.storefront.product-gallery', [
             'product' => $this->product,
+            'currentImage' => $this->getCurrentImage(),
+            'hasMultipleImages' => $this->hasMultipleImages(),
+            'currentImageIndex' => $this->currentImageIndex,
+            'images' => $this->images,
         ]);
     }
 }

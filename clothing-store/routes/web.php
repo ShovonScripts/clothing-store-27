@@ -1,11 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\DistrictController;
-use App\Http\Controllers\Storefront\CartController;
 use App\Http\Controllers\Storefront\CategoryController;
-use App\Http\Controllers\Storefront\CheckoutController;
 use App\Http\Controllers\Storefront\HomeController;
-use App\Http\Controllers\Storefront\OrderController;
+use App\Http\Controllers\Storefront\LocaleController;
 use App\Http\Controllers\Storefront\PageController;
 use App\Http\Controllers\Storefront\ProductController;
 use App\Http\Controllers\Storefront\RobotsController;
@@ -19,21 +17,18 @@ Route::get('/categories', [CategoryController::class, 'categories'])->name('cate
 
 Route::get('/product/{product:slug}', [ProductController::class, 'show'])->name('product.show');
 
-Route::get('/cart', [CartController::class, 'index'])->name('cart.page');
-Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
-Route::patch('/cart/update/{variant}', [CartController::class, 'update'])->name('cart.update');
-Route::delete('/cart/remove/{variant}', [CartController::class, 'remove'])->name('cart.remove');
-Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
-
-Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout');
-Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-Route::get('/order/success/{order:order_number}', [OrderController::class, 'success'])->name('order.success');
-Route::get('/track', [OrderController::class, 'track'])->name('track-order');
-Route::post('/track', [OrderController::class, 'trackPost'])->name('track-order.post');
+Route::post('/cart/add', [ProductController::class, 'addToCart'])->name('cart.add');
+Route::patch('/cart/update/{variant}', [ProductController::class, 'updateCart'])->name('cart.update');
+Route::delete('/cart/remove/{variant}', [ProductController::class, 'removeFromCart'])->name('cart.remove');
+Route::post('/cart/clear', [ProductController::class, 'clearCart'])->name('cart.clear');
+Route::get('/cart/count', [ProductController::class, 'cartCount'])->name('cart.count');
 
 Route::get('/page/{page:slug}', [PageController::class, 'show'])->name('pages.show');
 
 Route::get('/search', [ProductController::class, 'search'])->name('search');
+Route::get('/search/suggestions', [ProductController::class, 'suggestions'])->name('search.suggestions');
+
+Route::post('/locale', [LocaleController::class, 'switch'])->name('locale.switch');
 
 Route::prefix('api')->group(function () {
     Route::get('/districts', [DistrictController::class, 'index'])->name('api.districts.index');

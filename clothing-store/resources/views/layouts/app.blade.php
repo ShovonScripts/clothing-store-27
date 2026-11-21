@@ -12,12 +12,12 @@
 
     @stack('styles')
 </head>
-<body class="min-h-screen flex flex-col bg-white" x-data="{ locale: '{{ app()->getLocale() }}' }">
+<body class="min-h-screen flex flex-col bg-white" x-data="{ locale: '{{ app()->getLocale() }}', switchLocale(locale) { fetch('{{ route('locale.switch') }}', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }, body: JSON.stringify({ locale }) }).then(() => { this.locale = locale; location.reload(); }); } }">
     @include('components.storefront.announcement-bar')
     @include('components.storefront.header')
     
     <main class="flex-grow">
-        {{ $slot ?? '' }}
+        @yield('content')
     </main>
 
     @include('components.storefront.footer')

@@ -37,7 +37,6 @@
                     <li><a href="{{ route('categories') }}" class="hover:text-primary transition-colors">{{ __('Categories') }}</a></li>
                     <li><a href="{{ route('pages.show', 'about') }}" class="hover:text-primary transition-colors">{{ __('About Us') }}</a></li>
                     <li><a href="{{ route('pages.show', 'contact') }}" class="hover:text-primary transition-colors">{{ __('Contact') }}</a></li>
-                    <li><a href="{{ route('track-order') }}" class="hover:text-primary transition-colors">{{ __('Track Order') }}</a></li>
                 </ul>
             </div>
 

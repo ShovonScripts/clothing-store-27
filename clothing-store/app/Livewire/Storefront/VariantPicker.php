@@ -30,7 +30,7 @@ class VariantPicker extends Component
 
     public function mount(Product $product): void
     {
-        $this->product = $product->load(['variants.color', 'variants.size']);
+        $this->product = $product->load(['variants.color']);
 
         $this->availableSizes = $this->product->activeVariants()
             ->where('stock', '>', 0)
@@ -51,7 +51,7 @@ class VariantPicker extends Component
 
         // Auto-select first available color and size
         if (! empty($this->availableColors)) {
-            $this->selectedColorId = $this->availableColors->first()->id;
+            $this->selectedColorId = $this->availableColors[0]['id'];
             $this->updateAvailableSizes();
         }
     }
@@ -172,6 +172,7 @@ class VariantPicker extends Component
     {
         return view('livewire.storefront.variant-picker', [
             'product' => $this->product,
+            'variantPicker' => $this,
         ]);
     }
 }

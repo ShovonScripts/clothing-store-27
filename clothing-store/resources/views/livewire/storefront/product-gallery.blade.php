@@ -1,8 +1,8 @@
 <div class="relative">
     <div class="aspect-square bg-gray-100 rounded-xl overflow-hidden relative">
-        @if($productGallery->getCurrentImage())
-            <img src="{{ $productGallery->getCurrentImage()['url'] }}"
-                 alt="{{ $productGallery->getCurrentImage()['alt'] }}"
+        @if($currentImage)
+            <img src="{{ $currentImage['url'] }}"
+                 alt="{{ $currentImage['alt'] }}"
                  class="w-full h-full object-cover transition-opacity duration-300"
                  loading="eager"
                  fetchpriority="high">
@@ -14,7 +14,7 @@
             </div>
         @endif
 
-        @if($productGallery->hasMultipleImages())
+        @if($hasMultipleImages)
             <button type="button"
                     wire:click="previousImage"
                     class="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full hover:bg-white shadow-lg focus:outline-none focus:ring-2 focus:ring-primary"
@@ -30,31 +30,31 @@
             </button>
 
             <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1" role="tablist" aria-label="{{ __('Image thumbnails') }}">
-                @foreach($productGallery->images as $index => $image)
+                @foreach($images as $index => $image)
                     <button type="button"
                             wire:click="setCurrentImage({{ $index }})"
                             class="w-2 h-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-primary
-                                {{ $index == $productGallery->currentImageIndex ? 'bg-primary' : 'bg-white/70 hover:bg-white' }}"
+                                {{ $index == $currentImageIndex ? 'bg-primary' : 'bg-white/70 hover:bg-white' }}"
                             role="tab"
-                            aria-selected="{{ $index == $productGallery->currentImageIndex ? 'true' : 'false' }}"
+                            aria-selected="{{ $index == $currentImageIndex ? 'true' : 'false' }}"
                             aria-label="{{ __('Image :number', ['number' => $index + 1]) }}"></button>
                 @endforeach
             </div>
         @endif
     </div>
 
-    @if($productGallery->hasMultipleImages())
+    @if($hasMultipleImages)
         <div class="mt-3 overflow-x-auto pb-2" wire:ignore>
             <div class="flex gap-2 min-w-max" x-data="{ scrollLeft: 0 }">
-                @foreach($productGallery->images as $index => $image)
+                @foreach($images as $index => $image)
                     <button type="button"
                             wire:click="setCurrentImage({{ $index }})"
                             class="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all
-                                {{ $index == $productGallery->currentImageIndex ? 'border-primary' : 'border-transparent hover:border-gray-300' }}"
+                                {{ $index == $currentImageIndex ? 'border-primary' : 'border-transparent hover:border-gray-300' }}"
                             aria-label="{{ __('View image :number', ['number' => $index + 1]) }}"
-                            aria-current="{{ $index == $productGallery->currentImageIndex ? 'true' : 'false' }}">
+                            aria-current="{{ $index == $currentImageIndex ? 'true' : 'false' }}">
                         <img src="{{ $image['thumb'] }}" alt="{{ $image['alt'] }}" class="w-full h-full object-cover">
-                        @if($index == $productGallery->currentImageIndex)
+                        @if($index == $currentImageIndex)
                             <div class="absolute inset-0 bg-primary/20"></div>
                         @endif
                     </button>

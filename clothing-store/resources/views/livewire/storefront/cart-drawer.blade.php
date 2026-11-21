@@ -71,7 +71,7 @@
                 </div>
 
                 @if($subtotal < $freeShippingThreshold)
-                    <p class="text-xs text-amber-600 text-center">{{ __('Add {{ amount }} more for free delivery!', ['amount' => number_format(($freeShippingThreshold - $subtotal) / 100, 2)]) }}</p>
+                    <p class="text-xs text-amber-600 text-center">{{ __('Add :amount more for free delivery!', ['amount' => number_format(($freeShippingThreshold - $subtotal) / 100, 2)]) }}</p>
                 @else
                     <p class="text-xs text-green-600 text-center">{{ __('You qualify for free delivery!') }}</p>
                 @endif>
