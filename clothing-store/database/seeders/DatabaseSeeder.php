@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             ColorSeeder::class,
             DeliveryZoneSeeder::class,
             CategorySeeder::class,
+            SizeChartSeeder::class,
             PageSeeder::class,
             DemoProductSeeder::class,
             RolePermissionSeeder::class,

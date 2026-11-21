@@ -83,10 +83,11 @@ class DistrictSeeder extends Seeder
             ['name' => 'Kushtia', 'name_bn' => 'কুষ্টিয়া', 'zone' => 'outside_dhaka', 'sort_order' => 58],
 
             ['name' => 'Barishal', 'name_bn' => 'বরিশাল', 'zone' => 'outside_dhaka', 'sort_order' => 59],
-            ['name' => 'Bhola', 'name_bn' => 'ভোলা', 'zone' => 'outside_dhaka', 'sort_order' => 60],
-            ['name' => 'Jhalokati', 'name_bn' => 'ঝালকাঠি', 'zone' => 'outside_dhaka', 'sort_order' => 61],
-            ['name' => 'Patuakhali', 'name_bn' => 'পটুয়াখালী', 'zone' => 'outside_dhaka', 'sort_order' => 62],
-            ['name' => 'Pirojpur', 'name_bn' => 'পিরোজপুর', 'zone' => 'outside_dhaka', 'sort_order' => 63],
+            ['name' => 'Barguna', 'name_bn' => 'বরগুনা', 'zone' => 'outside_dhaka', 'sort_order' => 60],
+            ['name' => 'Bhola', 'name_bn' => 'ভোলা', 'zone' => 'outside_dhaka', 'sort_order' => 61],
+            ['name' => 'Jhalokati', 'name_bn' => 'ঝালকাঠি', 'zone' => 'outside_dhaka', 'sort_order' => 62],
+            ['name' => 'Patuakhali', 'name_bn' => 'পটুয়াখালী', 'zone' => 'outside_dhaka', 'sort_order' => 63],
+            ['name' => 'Pirojpur', 'name_bn' => 'পিরোজপুর', 'zone' => 'outside_dhaka', 'sort_order' => 64],
         ];
 
         foreach ($districts as $district) {

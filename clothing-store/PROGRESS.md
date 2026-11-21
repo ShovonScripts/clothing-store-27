@@ -54,19 +54,22 @@
 
 ---
 
-## Phase 1: Catalogue & Admin Basics ⏳ PENDING
+## Phase 1: Catalogue & Admin Basics ✅ COMPLETED (2026-11-21)
 
 ### Tasks:
-- [ ] Migrations: categories, products, colors, variants, size_charts, districts, areas, delivery_zones, pages, banners
-- [ ] Seeders: districts (64), zones, colors, categories, pages, demo products (~24)
-- [ ] Filament resources: Category (tree), Product (tabs, media, variants), Color, SizeChart, Banner, Page
-- [ ] Settings pages (Store, Payments, Delivery)
-- [ ] Roles/permissions: owner, manager, staff
+- [x] Migrations: categories, products, colors, variants, size_charts, districts, areas, delivery_zones, pages, banners, permissions
+- [x] Seeders: districts (64), zones, colors, categories, pages, demo products (~27 with variants)
+- [x] Filament resources: Category (tree), Product (tabs, media, variants, Repeater), Color, SizeChart, Banner, Page, DeliveryZone, District
+- [x] Settings page (Store, Payments, Delivery) using SettingsService
+- [x] Roles/permissions: owner, manager, staff with policies
 
 ### Acceptance:
 - Owner can add product with 3 sizes × 2 colours and images
-- Conversions generated as WebP
+- Conversions generated as WebP (thumb 400w, card 600w, large 1200w)
 - Settings saved & cached
+- Admin dashboard accessible by all roles
+- Permissions enforced: staff cannot verify bKash, manager cannot view cost_price
+- Admin routes accessible with proper permissions
 
 ---
 

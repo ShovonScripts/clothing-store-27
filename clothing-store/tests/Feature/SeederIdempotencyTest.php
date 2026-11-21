@@ -37,7 +37,21 @@ class SeederIdempotencyTest extends TestCase
         $countAfterSecond = District::count();
 
         $this->assertEquals($countAfterFirst, $countAfterSecond);
-        $this->assertEquals(63, $countAfterFirst);
+        $this->assertEquals(64, $countAfterFirst);
+    }
+
+    public function test_all_districts_have_bangla_names(): void
+    {
+        $this->seed(DistrictSeeder::class);
+        $districts = District::all();
+
+        $this->assertEquals(64, $districts->count());
+
+        foreach ($districts as $district) {
+            $this->assertNotNull($district->name_bn, "District {$district->name} is missing name_bn");
+            $this->assertNotEmpty($district->name_bn, "District {$district->name} has empty name_bn");
+            $this->assertTrue($district->is_active, "District {$district->name} should be active");
+        }
     }
 
     public function test_area_seeder_is_idempotent(): void

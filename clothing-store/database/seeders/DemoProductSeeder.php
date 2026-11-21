@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SizeChart;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 
 class DemoProductSeeder extends Seeder
 {
@@ -637,6 +638,9 @@ class DemoProductSeeder extends Seeder
                 ]
             );
 
+            // Generate placeholder images for each color
+            $this->generatePlaceholderImages($product, $productData['colors']);
+
             $colorNames = $productData['colors'];
             $sizes = $productData['sizes'];
             $stock = $productData['stock_per_variant'];
@@ -667,6 +671,104 @@ class DemoProductSeeder extends Seeder
             }
         }
 
-        $this->command?->info('Seeded '.count($products).' demo products with variants.');
+        $this->command?->info('Seeded '.count($products).' demo products with variants and placeholder images.');
+    }
+
+    private function generatePlaceholderImages(Product $product, array $colorNames): void
+    {
+        if (! Storage::disk('public')->exists('products')) {
+            Storage::disk('public')->makeDirectory('products');
+        }
+
+        foreach ($colorNames as $colorName) {
+            $color = Color::where('name', $colorName)->first();
+            if (! $color) {
+                continue;
+            }
+
+            // Generate 2-3 images per product-color combination
+            $imageCount = rand(2, 3);
+
+            for ($i = 1; $i <= $imageCount; $i++) {
+                $image = $this->createPlaceholderImage($product, $color, $i);
+                $product->addMedia($image)
+                    ->toMediaCollection('gallery');
+            }
+        }
+    }
+
+    private function createPlaceholderImage(Product $product, Color $color, int $index): string
+    {
+        $width = 800;
+        $height = 1000;
+
+        $image = imagecreatetruecolor($width, $height);
+
+        // Parse hex color
+        $hex = $color->hex ?? '#000000';
+        $hex = ltrim($hex, '#');
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 1, 2));
+        $b = hexdec(substr($hex, 2, 2));
+
+        // Create gradient background
+        for ($y = 0; $y < $height; $y++) {
+            $ratio = $y / $height;
+            $r = (int) ($r * (1 - $ratio * 0.3));
+            $gr = (int) ($g * (1 - $ratio * 0.3));
+            $bl = (int) ($b * (1 - $ratio * 0.3));
+            $colorAllocated = imagecolorallocate($image, $r, $gr, $bl);
+            imageline($image, 0, $y, $width, $y, $colorAllocated);
+        }
+
+        // Add product name
+        $textColor = imagecolorallocate($image, 255, 255, 255);
+        $fontSize = 5;
+        $fontWidth = imagefontwidth($fontSize);
+        $fontHeight = imagefontheight($fontSize);
+
+        $text = $product->name;
+        $textWidth = strlen($text) * $fontWidth;
+        $x = (int) (($width - $textWidth) / 2);
+        $y = (int) (($height / 2) - 20);
+
+        // Add text shadow
+        imagestring($image, $fontSize, $x + 1, $y + 1, $text, imagecolorallocate($image, 0, 0, 0));
+        imagestring($image, $fontSize, $x, $y, $text, $textColor);
+
+        // Add color name
+        $colorText = $color->name.' ('.$color->name_bn.')';
+        $colorTextWidth = strlen($colorText) * $fontWidth;
+        $cx = (int) (($width - $colorTextWidth) / 2);
+        $cy = $y + $fontHeight + 10;
+
+        // Add text shadow
+        imagestring($image, $fontSize, $cx + 1, $cy + 1, $colorText, imagecolorallocate($image, 0, 0, 0));
+        imagestring($image, $fontSize, $cx, $cy, $colorText, $textColor);
+
+        // Add price
+        $priceText = '৳'.number_format($product->price);
+        $priceWidth = strlen($priceText) * $fontWidth;
+        $px = (int) (($width - $priceWidth) / 2);
+        $py = $cy + $fontHeight + 10;
+        imagestring($image, $fontSize, $px + 1, $py + 1, $priceText, imagecolorallocate($image, 0, 0, 0));
+        imagestring($image, $fontSize, $px, $py, $priceText, $textColor);
+
+        // Add index badge
+        $badgeText = 'Image '.$index;
+        $badgeWidth = strlen($badgeText) * $fontWidth;
+        $bx = (int) ($width - $badgeWidth - 20);
+        $by = (int) ($height - $fontHeight - 20);
+        $badgeBg = imagecolorallocate($image, 0, 0, 0);
+        $badgeFg = imagecolorallocate($image, 255, 255, 255);
+        imagefilledrectangle($image, $bx - 5, $by - 5, $bx + $badgeWidth + 5, $by + $fontHeight + 5, $badgeBg);
+        imagestring($image, $fontSize, $bx, $by, $badgeText, $badgeFg);
+
+        // Save to temporary file
+        $tempPath = sys_get_temp_dir().'/placeholder_'.$product->slug.'_'.$color->name.'_'.$index.'.jpg';
+        imagejpeg($image, $tempPath, 90);
+        imagedestroy($image);
+
+        return $tempPath;
     }
 }

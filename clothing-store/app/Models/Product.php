@@ -7,6 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
@@ -71,16 +72,19 @@ class Product extends Model implements HasMedia
                 $this->addMediaConversion('thumb')
                     ->width(400)
                     ->height(400)
+                    ->fit(Fit::Crop)
                     ->format('webp')
                     ->quality(80);
                 $this->addMediaConversion('card')
                     ->width(600)
                     ->height(600)
+                    ->fit(Fit::Crop)
                     ->format('webp')
                     ->quality(80);
                 $this->addMediaConversion('large')
                     ->width(1200)
                     ->height(1200)
+                    ->fit(Fit::Crop)
                     ->format('webp')
                     ->quality(85);
             });
