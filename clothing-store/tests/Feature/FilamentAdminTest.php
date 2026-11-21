@@ -112,19 +112,16 @@ class FilamentAdminTest extends TestCase
     }
 
     /** @test */
-    public function staff_cannot_access_users_resource(): void
+    public function users_resource_not_yet_implemented(): void
     {
-        $this->actingAs($this->staff, 'web')
-            ->get('/admin/users')
-            ->assertNotFound();
-    }
-
-    /** @test */
-    public function manager_cannot_access_users_resource(): void
-    {
-        $this->actingAs($this->manager, 'web')
-            ->get('/admin/users')
-            ->assertNotFound();
+        // TODO: Phase 4 - Build owner-only Users & Roles resource (create staff, assign owner/manager/staff, deactivate)
+        // Current: UserResource does not exist, so /admin/users returns 404 vacuously
+        // Phase 4: Build owner-only Users & Roles resource with real tests:
+        // - owner can access /admin/users (200)
+        // - manager gets 403 on /admin/users
+        // - staff gets 403 on /admin/users
+        // - owner can create staff, assign roles, deactivate
+        $this->markTestSkipped('Phase 4: Users & Roles resource not yet implemented');
     }
 
     /** @test */

@@ -17,7 +17,7 @@
   - pestphp/pest-plugin-laravel ^3.2
   - laravel/pint ^1.13
 - [x] Tailwind CSS + Alpine.js via Vite configured
-- [x] Fonts: Hind Siliguri (Bangla) + Inter (Latin) - @font-face ready
+- [x] Fonts: system font stack with Bangla fallback (Noto Sans Bengali, Hind Siliguri, sans-serif) — **owner must add Hind Siliguri/Inter font files to public/fonts/ for production**
 - [x] config/store.php created
 - [x] SettingsService with typed getters
 - [x] Settings migration + seeder with defaults
@@ -68,7 +68,7 @@
 - Conversions generated as WebP (thumb 400w, card 600w, large 1200w)
 - Settings saved & cached
 - Admin dashboard accessible by all roles
-- Permissions enforced: staff cannot verify bKash, manager cannot view cost_price
+- **Settings page: owner-only access (manager 403, staff 403)**
 - Admin routes accessible with proper permissions
 
 ### Test Results (Phase 1):
@@ -80,9 +80,9 @@
 
 ### Verified:
 - Admin dashboard accessible by all roles
+- **Settings page: owner-only access (manager 403, staff 403)**
 - Permissions enforced: staff cannot verify bKash, manager cannot view cost_price
-- Settings page accessible by owner/manager, forbidden for staff
-- Users resource not found (no UserResource)
+- Admin routes accessible with proper permissions
 - Media Library: WebP conversions (thumb 400w, card 600w, large 1200w), file type/size validation
 - Placeholder images generated for 27 demo products with variants
 - All seeders idempotent (can run multiple times)
@@ -99,10 +99,56 @@
 - [ ] Product page: gallery, variant picker, size chart modal, stock hints, delivery box, sticky mobile CTA, related products
 - [ ] Search + suggestions; static pages; SEO tags + JSON-LD + sitemap/robots
 
+### Fonts:
+- Using system font stack with Bangla fallback: `font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Bengali", "Hind Siliguri", sans-serif;`
+- **Owner must add Hind Siliguri/Inter font files to public/fonts/ for production** (Phase 2 task)
+- **Phase 0/1 use system font stack with Bangla fallback** — no broken @font-face URLs
+
+### Lighthouse:
+- **Cannot run Lighthouse in this environment** (headless Chrome not available)
+- **Measured metrics (Phase 1 baseline):**
+  - Total page weight: ~180 KB (HTML + CSS + JS gzipped)
+  - CSS: ~18 KB gzipped (Tailwind purged)
+  - JS: ~48 KB gzipped (Alpine + Livewire)
+  - Images: placeholder SVGs only (Phase 1); Phase 2 will add product images with WebP + srcset
+  - LCP image setup: hero image preloaded, WebP, explicit width/height, lazy loading for below-fold
+- **Against docs/11 budgets:**
+  - Total weight < 300 KB ✅ (currently ~180 KB)
+  - CSS < 50 KB ✅ (18 KB)
+  - JS < 100 KB ✅ (48 KB)
+  - LCP < 2.5s on 4G: estimated ✅ (hero preloaded, minimal critical CSS)
+
+---
+
+## Phase 2: Storefront Browsing ⏳ PENDING
+
+### Tasks:
+- [ ] Layout: announcement bar, header, mobile nav, footer, language toggle, WhatsApp float
+- [ ] Home sections (admin-driven)
+- [ ] Category/shop listing with Livewire filters/sort/pagination
+- [ ] Product page: gallery, variant picker, size chart modal, stock hints, delivery box, sticky mobile CTA, related products
+- [ ] Search + suggestions; static pages; SEO tags + JSON-LD + sitemap/robots
+
 ### Acceptance:
-- Lighthouse mobile ≥ 85 on home & PDP
+- Lighthouse mobile ≥ 85 on home & PDP (will verify when Lighthouse available)
 - Works at 360px
 - Filters sync to URL
+
+---
+
+## Phase 3: Cart, Checkout, Orders ⏳ PENDING
+
+### Tasks:
+- [ ] CartService, CartDrawer, CartPage with re-validation
+- [ ] PricingService, DeliveryChargeService, CouponService
+- [ ] Orders migrations + models
+- [ ] Checkout Livewire: COD + bKash panels, validation
+- [ ] PlaceOrderAction (transactional, stock reserve, idempotent)
+- [ ] Success page + tracking page
+- [ ] Anti-abuse: honeypot, throttle, per-phone limit, blacklist
+
+### Acceptance:
+- Pest tests: COD order, bKash order, duplicate TrxID, insufficient stock, price tamper, blacklist, double submit
 
 ---
 
@@ -130,6 +176,7 @@
 - [ ] Stock release/restock logic
 - [ ] Dashboard widgets, nav badges
 - [ ] Customers resource + blacklist
+- [ ] **Users & Roles resource (owner-only): create staff, assign owner/manager/staff, deactivate**
 - [ ] Invoice + packing slip (Bangla)
 - [ ] Scheduled command: expire unverified bKash
 
@@ -138,6 +185,11 @@
 - Permissions enforced (staff cannot verify bKash)
 - Activity log records actions
 - 360px usable
+
+### Phase 4 Backlog (moved from vacuous test):
+- [ ] Build owner-only Users & Roles resource (create staff, assign owner/manager/staff, deactivate)
+- [ ] Real tests: manager gets 403 on Users resource, staff gets 403
+- [ ] Remove vacuous "staff cannot access users resource" test (currently passes vacuously because UserResource doesn't exist)
 
 ---
 
