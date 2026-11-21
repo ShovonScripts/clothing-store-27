@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Storefront;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProductVariant;
 use App\Services\CartService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,9 +18,30 @@ class CartController extends Controller
 
     public function index(): View
     {
-        return view('storefront.cart.index', [
-            'cart' => $this->cartService->getCart(),
-        ]);
+        $cartItems = $this->cartService->getCart();
+        $variantIds = $cartItems->keys()->toArray();
+
+        $variants = ProductVariant::whereIn('id', $variantIds)
+            ->with(['product.media', 'color'])
+            ->get()
+            ->keyBy('id');
+
+        $items = $cartItems->map(function ($quantity, $variantId) use ($variants) {
+            $variant = $variants->get($variantId);
+            if (! $variant) {
+                return null;
+            }
+
+            return [
+                'variant' => $variant,
+                'quantity' => $quantity,
+                'subtotal' => $variant->getEffectivePrice() * $quantity,
+            ];
+        })->filter();
+
+        $subtotal = $items->sum('subtotal');
+
+        return view('storefront.cart.index', compact('items', 'subtotal'));
     }
 
     public function add(Request $request)
@@ -47,7 +69,7 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'cart' => $this->cartService->getCart(),
+            'cart_count' => $this->cartService->count(),
         ]);
     }
 
@@ -57,7 +79,7 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'cart' => $this->cartService->getCart(),
+            'cart_count' => $this->cartService->count(),
         ]);
     }
 

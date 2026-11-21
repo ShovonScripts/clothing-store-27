@@ -1,151 +1,134 @@
 @extends('layouts.app')
 
-@section('title', config('store.name', '{BRAND}'))
+@section('title', config('store.name'))
 
 @section('content')
-<div class="space-y-12">
-    <!-- Hero Section -->
-    <section class="relative overflow-hidden" aria-labelledby="hero-heading">
-        <div class="container mx-auto px-4 py-12 lg:py-20">
-            <div class="max-w-3xl mx-auto text-center">
-                <h1 id="hero-heading" class="text-3xl lg:text-5xl font-bold text-gray-900 mb-4 leading-tight">
-                    {{ __('Men\'s Fashion for the Modern Gentleman') }}
-                </h1>
-                <p class="text-lg lg:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                    {{ __('Discover premium quality shirts, t-shirts, panjabis, and more. Designed for Bangladesh, delivered to your door.') }}
-                </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                    <a href="{{ route('shop') }}" class="btn-primary">
-                        {{ __('Shop Now') }}
-                    </a>
-                    <a href="{{ route('categories') }}" class="btn-secondary">
-                        {{ __('Browse Categories') }}
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
+<div class="min-h-screen bg-gray-50">
 
-    <!-- Trust Strip -->
-    <section class="bg-gray-50 py-8" aria-labelledby="trust-heading">
-        <div class="container mx-auto px-4">
-            <h2 id="trust-heading" class="sr-only">{{ __('Why Choose Us') }}</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                <div class="p-4">
-                    <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                        </svg>
+    @if($banners->isNotEmpty())
+        <section class="relative" aria-label="{{ __('Hero banner') }}">
+            <div class="relative h-72 md:h-96">
+                @foreach($banners as $banner)
+                    <div class="absolute inset-0" {{ $loop->first ? '' : 'style="display: none"' }}>
+                        @if($banner->image_path)
+                            <img src="{{ asset('storage/' . $banner->image_path) }}"
+                                 alt="{{ $banner->title }}"
+                                 class="w-full h-full object-cover">
+                        @endif
+                        <div class="absolute inset-0 bg-black/40"></div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="container mx-auto px-4 text-center text-white">
+                                <h1 class="text-4xl md:text-6xl font-bold mb-4">{{ $banner->title }}</h1>
+                                @if($banner->subtitle)
+                                    <p class="text-xl md:text-2xl mb-6 max-w-2xl mx-auto">{{ $banner->subtitle }}</p>
+                                @endif
+                                @if($banner->button_text && $banner->button_link)
+                                    <a href="{{ $banner->button_link }}" class="inline-flex items-center gap-2 bg-white text-gray-900 px-8 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors">
+                                        {{ $banner->button_text }}
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
                     </div>
-                    <h3 class="font-semibold text-gray-900">{{ __('Cash on Delivery') }}</h3>
-                    <p class="text-sm text-gray-600">{{ __('Pay when you receive') }}</p>
-                </div>
-                <div class="p-4">
-                    <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="font-semibold text-gray-900">{{ __('bKash Payment') }}</h3>
-                    <p class="text-sm text-gray-600">{{ __('Secure manual verification') }}</p>
-                </div>
-                <div class="p-4">
-                    <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                        </svg>
-                    </div>
-                    <h3 class="font-semibold text-gray-900">{{ __('Nationwide Delivery') }}</h3>
-                    <p class="text-sm text-gray-600">{{ __('All 64 districts covered') }}</p>
-                </div>
-                <div class="p-4">
-                    <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                    </div>
-                    <h3 class="font-semibold text-gray-900">{{ __('Easy Returns') }}</h3>
-                    <p class="text-sm text-gray-600">{{ __('3-day exchange policy') }}</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Categories -->
-    <section class="py-12 lg:py-16" aria-labelledby="categories-heading">
-        <div class="container mx-auto px-4">
-            <div class="flex items-center justify-between mb-8">
-                <h2 id="categories-heading" class="text-2xl lg:text-3xl font-bold text-gray-900">{{ __('Shop by Category') }}</h2>
-                <a href="{{ route('categories') }}" class="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
-                    {{ __('View All') }} <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </a>
-            </div>
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" role="list">
-                @foreach(['T-Shirts', 'Polo Shirts', 'Shirts', 'Panjabi', 'Pants & Jeans', 'Hoodies', 'Jackets', 'Innerwear', 'Accessories'] as $category)
-                <a href="{{ route('shop') }}?category={{ Str::slug($category) }}" class="card group p-6 text-center" role="listitem">
-                    <div class="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-xl flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                        <svg class="w-10 h-10 text-gray-400 group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17a.002.002 0 11-.004-.002z" />
-                        </svg>
-                    </div>
-                    <h3 class="font-medium text-gray-900">{{ __($category) }}</h3>
-                </a>
                 @endforeach
             </div>
-        </div>
-    </section>
+            @if($banners->count() > 1)
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    @foreach($banners as $index => $banner)
+                        <button type="button" class="w-2 h-2 rounded-full transition-all {{ $loop->first ? 'bg-white' : 'bg-white/50' }}" aria-label="{{ __('Slide :number', ['number' => $index + 1]) }}"></button>
+                    @endforeach
+                </div>
+            @endif
+        </section>
+    @endif
 
-    <!-- Featured Products Placeholder -->
-    <section class="py-12 lg:py-16 bg-gray-50" aria-labelledby="featured-heading">
-        <div class="container mx-auto px-4">
-            <div class="flex items-center justify-between mb-8">
-                <h2 id="featured-heading" class="text-2xl lg:text-3xl font-bold text-gray-900">{{ __('New Arrivals') }}</h2>
-                <a href="{{ route('shop') }}?sort=newest" class="text-sm font-medium text-primary hover:text-primary/80 transition-colors">
-                    {{ __('View All') }} <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                </a>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" role="list">
-                @for($i = 1; $i <= 4; $i++)
-                <article class="card group" role="listitem">
-                    <div class="aspect-square bg-gray-100 relative overflow-hidden">
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <svg class="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                        </div>
-                        <div class="absolute top-2 left-2">
-                            <span class="badge bg-accent text-white">{{ __('New') }}</span>
-                        </div>
-                    </div>
-                    <div class="p-4">
-                        <h3 class="font-medium text-gray-900 mb-1 line-clamp-1">{{ __('Premium Cotton T-Shirt') }}</h3>
-                        <p class="text-sm text-gray-500 mb-2">{{ __('Black / Navy / White') }}</p>
-                        <div class="flex items-center justify-between">
-                            <span class="text-lg font-bold text-gray-900">৳{{ number_format(1250) }}</span>
-                            <button class="btn-primary text-sm px-3 py-1.5" aria-label="{{ __('Add to cart') }}">
-                                {{ __('Add') }}
-                            </button>
-                        </div>
-                    </div>
-                </article>
-                @endfor
-            </div>
-        </div>
-    </section>
+    <main class="container mx-auto px-4 py-8">
+        @if($categories->isNotEmpty())
+            <section aria-label="{{ __('Shop by Category') }}">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">{{ __('Shop by Category') }}</h2>
+                    <a href="{{ route('categories') }}" class="text-primary hover:underline text-sm font-medium">{{ __('View All') }}</a>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    @foreach($categories as $category)
+                        <a href="{{ route('shop', ['category' => $category->slug]) }}" class="group bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-lg hover:border-gray-200 transition-all duration-300">
+                            <div class="aspect-square bg-gray-100 relative overflow-hidden">
+                                @if($category->image_path)
+                                    <img src="{{ asset('storage/' . $category->image_path) }}"
+                                         alt="{{ $category->getDisplayNameAttribute() }}"
+                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                @else
+                                    <div class="w-full h-full flex items-center justify-center">
+                                        <svg class="w-12 h-12 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                                        </svg>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="p-4 text-center">
+                                <h3 class="font-medium text-gray-900">{{ $category->getDisplayNameAttribute() }}</h3>
+                                <p class="text-sm text-gray-500 mt-1">{{ $category->activeChildren->count() }} {{ __('subcategories') }}</p>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </section>
+        @endif
 
-    <!-- CTA Section -->
-    <section class="py-12 lg:py-16" aria-labelledby="cta-heading">
-        <div class="container mx-auto px-4">
-            <div class="bg-primary text-white rounded-2xl p-8 lg:p-12 text-center">
-                <h2 id="cta-heading" class="text-2xl lg:text-3xl font-bold mb-4">{{ __('Ready to Upgrade Your Wardrobe?') }}</h2>
-                <p class="text-lg lg:text-xl text-primary/80 mb-8 max-w-2xl mx-auto">
-                    {{ __('Join thousands of satisfied customers. Free delivery on orders over ৳') }} {{ number_format(settings('free_delivery_over', 0)) }}.
-                </p>
-                <a href="{{ route('shop') }}" class="btn-accent inline-flex">
-                    {{ __('Start Shopping') }}
-                </a>
-            </div>
+        @if($featuredProducts->isNotEmpty())
+            <section aria-label="{{ __('Featured Products') }}" class="mt-16">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">{{ __('Featured Products') }}</h2>
+                    <a href="{{ route('shop') }}" class="text-primary hover:underline text-sm font-medium">{{ __('View All') }}</a>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    @foreach($featuredProducts as $product)
+                        @include('storefront.partials.product-card', ['product' => $product])
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        @if($newProducts->isNotEmpty())
+            <section aria-label="{{ __('New Arrivals') }}" class="mt-16">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">{{ __('New Arrivals') }}</h2>
+                    <a href="{{ route('shop') }}?sort=newest" class="text-primary hover:underline text-sm font-medium">{{ __('View All') }}</a>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    @foreach($newProducts as $product)
+                        @include('storefront.partials.product-card', ['product' => $product])
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        <section class="mt-16 bg-white rounded-2xl border border-gray-100 p-8 md:p-12">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                <div class="p-4">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-xl flex items-center justify-center">
+                        <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l-1.14-1.14-2.83 2.83-1.95-1.95-1.41 1.41L18 16.17l4.44-4.44z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">{{ __('Free Delivery') }}</h3>
+                    <p class="text-gray-600 text-sm">{{ __('On orders over ৳2,000') }}</p>
+                </div>
+                <div class="p-4">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-xl flex items-center justify-center">
+                        <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm-1-16v8.5l6.5 3.5-.75 1.42-6.5-3.5v-9.92z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">{{ __('Fast Shipping') }}</h3>
+                    <p class="text-gray-600 text-sm">{{ __('Same-day dispatch in Dhaka') }}</p>
+                </div>
+                <div class="p-4">
+                    <div class="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-xl flex items-center justify-center">
+                        <svg class="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">{{ __('Secure Payment') }}</h3>
+                    <p class="text-gray-600 text-sm">{{ __('Cash on delivery available') }}</p>
+                </div>
+</div>
         </div>
-    </section>
+    </main>
 </div>
 @endsection

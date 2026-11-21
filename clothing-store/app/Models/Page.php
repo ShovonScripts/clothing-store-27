@@ -53,4 +53,14 @@ class Page extends Model
             ? $this->body_bn
             : $this->body;
     }
+
+    public function getDisplayNameAttribute(): string
+    {
+        return $this->getDisplayTitleAttribute();
+    }
+
+    public function getDisplayContentAttribute(): string
+    {
+        return $this->getDisplayBodyAttribute();
+    }
 }
