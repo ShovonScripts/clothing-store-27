@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\SizeCharts;
 
+use App\Enums\NavigationGroup;
 use App\Filament\Resources\SizeCharts\Pages\CreateSizeChart;
 use App\Filament\Resources\SizeCharts\Pages\EditSizeChart;
 use App\Filament\Resources\SizeCharts\Pages\ListSizeCharts;
 use App\Filament\Resources\SizeCharts\Schemas\SizeChartForm;
 use App\Filament\Resources\SizeCharts\Tables\SizeChartsTable;
 use App\Models\SizeChart;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -20,10 +20,11 @@ class SizeChartResource extends Resource
 {
     protected static ?string $model = SizeChart::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTableCells;
+    protected static \BackedEnum|string|null $navigationIcon = Heroicon::OutlinedTableCells;
 
-    // protected static ?string $navigationGroup = 'Catalog';
-    // protected static ?int $navigationSort = 4;
+    protected static \UnitEnum|string|null $navigationGroup = NavigationGroup::Catalog;
+
+    protected static ?int $navigationSort = 4;
 
     protected static ?string $recordTitleAttribute = 'name';
 

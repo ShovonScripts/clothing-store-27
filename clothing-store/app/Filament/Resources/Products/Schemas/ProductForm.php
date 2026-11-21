@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Products\Schemas;
 
 use App\Models\Color;
+use App\Models\Product;
+use App\Models\ProductVariant;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 
 class ProductForm
@@ -136,7 +138,7 @@ class ProductForm
                                     ->description(__('Manage size × color variants with stock and price overrides'))
                                     ->schema([
                                         Repeater::make('variants')
-                                            ->label(false)
+                                            ->label('')
                                             ->schema([
                                                 Grid::make(4)
                                                     ->schema([
@@ -151,10 +153,9 @@ class ProductForm
                                                             ->native(false),
                                                         Select::make('color_id')
                                                             ->label(__('Color'))
-                                                            ->relationship('color', 'name')
+                                                            ->options(Color::all()->pluck('name', 'id')->toArray())
                                                             ->searchable()
                                                             ->preload()
-                                                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->getDisplayNameAttribute())
                                                             ->required(),
                                                         TextInput::make('price')
                                                             ->label(__('Price Override (৳)'))
@@ -178,7 +179,6 @@ class ProductForm
                                                     ])->columns(2),
                                             ])
                                             ->addActionLabel(__('Add Variant'))
-                                            ->deleteActionLabel(__('Delete'))
                                             ->reorderable()
                                             ->collapsible()
                                             ->itemLabel(fn (array $state): ?string => ($state['size'] ?? '').' / '.($state['color_id'] ? Color::find($state['color_id'])?->getDisplayNameAttribute() : '')

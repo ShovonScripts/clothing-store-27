@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Colors;
 
+use App\Enums\NavigationGroup;
 use App\Filament\Resources\Colors\Pages\CreateColor;
 use App\Filament\Resources\Colors\Pages\EditColor;
 use App\Filament\Resources\Colors\Pages\ListColors;
 use App\Filament\Resources\Colors\Schemas\ColorForm;
 use App\Filament\Resources\Colors\Tables\ColorsTable;
 use App\Models\Color;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -20,10 +20,11 @@ class ColorResource extends Resource
 {
     protected static ?string $model = Color::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPaintBrush;
+    protected static \BackedEnum|string|null $navigationIcon = Heroicon::OutlinedPaintBrush;
 
-    // protected static ?string $navigationGroup = 'Catalog';
-    // protected static ?int $navigationSort = 3;
+    protected static \UnitEnum|string|null $navigationGroup = NavigationGroup::Catalog;
+
+    protected static ?int $navigationSort = 3;
 
     protected static ?string $recordTitleAttribute = 'name';
 

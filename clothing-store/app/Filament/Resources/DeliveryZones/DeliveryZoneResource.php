@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\DeliveryZones;
 
+use App\Enums\NavigationGroup;
 use App\Filament\Resources\DeliveryZones\Pages\CreateDeliveryZone;
 use App\Filament\Resources\DeliveryZones\Pages\EditDeliveryZone;
 use App\Filament\Resources\DeliveryZones\Pages\ListDeliveryZones;
 use App\Filament\Resources\DeliveryZones\Schemas\DeliveryZoneForm;
 use App\Filament\Resources\DeliveryZones\Tables\DeliveryZonesTable;
 use App\Models\DeliveryZone;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -20,10 +20,11 @@ class DeliveryZoneResource extends Resource
 {
     protected static ?string $model = DeliveryZone::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMapPin;
+    protected static \BackedEnum|string|null $navigationIcon = Heroicon::OutlinedMapPin;
 
-    // protected static ?string $navigationGroup = 'Delivery';
-    // protected static ?int $navigationSort = 1;
+    protected static \UnitEnum|string|null $navigationGroup = NavigationGroup::Delivery;
+
+    protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'name';
 

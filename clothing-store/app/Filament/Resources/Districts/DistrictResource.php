@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Districts;
 
+use App\Enums\NavigationGroup;
 use App\Filament\Resources\Districts\Pages\CreateDistrict;
 use App\Filament\Resources\Districts\Pages\EditDistrict;
 use App\Filament\Resources\Districts\Pages\ListDistricts;
 use App\Filament\Resources\Districts\Schemas\DistrictForm;
 use App\Filament\Resources\Districts\Tables\DistrictsTable;
 use App\Models\District;
-use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -20,10 +20,11 @@ class DistrictResource extends Resource
 {
     protected static ?string $model = District::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMapPin;
+    protected static \BackedEnum|string|null $navigationIcon = Heroicon::OutlinedMapPin;
 
-    // protected static ?string $navigationGroup = 'Delivery';
-    // protected static ?int $navigationSort = 2;
+    protected static \UnitEnum|string|null $navigationGroup = NavigationGroup::Delivery;
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $recordTitleAttribute = 'name';
 
