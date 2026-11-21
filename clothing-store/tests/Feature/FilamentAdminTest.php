@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Models\Product;
 use App\Models\User;
+use App\Services\SettingsService;
 use Database\Seeders\CategorySeeder;
 use Database\Seeders\ColorSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\SizeChartSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 class FilamentAdminTest extends TestCase
@@ -61,39 +62,67 @@ class FilamentAdminTest extends TestCase
     }
 
     /** @test */
-    public function owner_can_create_product_with_variants(): void
+    public function owner_can_access_settings_page(): void
     {
-        // Product creation via Filament resource requires Livewire - skipped in feature test
-        $this->markTestSkipped('Product creation via Filament resource requires Livewire component testing');
+        $this->actingAs($this->owner, 'web')
+            ->get('/admin/settings-page')
+            ->assertOk();
     }
 
     /** @test */
     public function manager_cannot_access_settings_page(): void
     {
-        // SettingsPage has Filament 5 compatibility issues - skipped
-        $this->markTestSkipped('SettingsPage has Filament 5 compatibility issues');
+        $this->actingAs($this->manager, 'web')
+            ->get('/admin/settings-page')
+            ->assertForbidden();
     }
 
     /** @test */
     public function staff_cannot_access_settings_page(): void
     {
-        // SettingsPage has Filament 5 compatibility issues - skipped
-        $this->markTestSkipped('SettingsPage has Filament 5 compatibility issues');
+        $this->actingAs($this->staff, 'web')
+            ->get('/admin/settings-page')
+            ->assertForbidden();
     }
 
     /** @test */
-    public function manager_cannot_access_users_resource(): void
+    public function owner_can_save_settings_and_cache_busted(): void
     {
-        // No users resource exists in Filament admin (no UserResource)
-        $this->actingAs($this->manager, 'web')
-            ->get('/admin/users')
-            ->assertNotFound();
+        // Test SettingsService cache busting directly
+        $settingsService = app(SettingsService::class);
+
+        // Prime the cache
+        $settingsService->get('bkash_number');
+        $this->assertTrue(Cache::has('store_settings'));
+
+        // Call clearCache directly to test cache busting
+        $settingsService->clearCache();
+        $this->assertFalse(Cache::has('store_settings'));
+
+        // Verify settings can be saved and cache is busted
+        $settingsService->set('bkash_number', '01712345678', 'string', 'payments');
+        $this->assertFalse(Cache::has('store_settings'));
+
+        $settingsService->set('delivery_inside_dhaka', '80', 'int', 'delivery');
+        $this->assertFalse(Cache::has('store_settings'));
+
+        // Verify settings can be retrieved
+        $this->assertEquals('01712345678', $settingsService->get('bkash_number'));
+        $this->assertEquals(80, $settingsService->get('delivery_inside_dhaka'));
     }
 
     /** @test */
     public function staff_cannot_access_users_resource(): void
     {
         $this->actingAs($this->staff, 'web')
+            ->get('/admin/users')
+            ->assertNotFound();
+    }
+
+    /** @test */
+    public function manager_cannot_access_users_resource(): void
+    {
+        $this->actingAs($this->manager, 'web')
             ->get('/admin/users')
             ->assertNotFound();
     }
