@@ -687,6 +687,13 @@ class DemoProductSeeder extends Seeder
                     ->toMediaCollection('gallery');
             }
         }
+
+        // Generate all conversions for this product's media at seed time
+        $product->getMedia('gallery')->each(function ($media) {
+            if (method_exists($media, 'generateConversions')) {
+                $media->generateConversions();
+            }
+        });
     }
 
     private function createPlaceholderImage(Product $product, Color $color, int $index): string

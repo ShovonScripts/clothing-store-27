@@ -24,12 +24,12 @@ class SettingsService
     {
         return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
             return DB::table('settings')
-                ->pluck('value', 'key')
-                ->mapWithKeys(function ($value, $key) {
-                    $setting = DB::table('settings')->where('key', $key)->first();
-                    $castValue = $this->castValue($value, $setting->type ?? 'string');
+                ->select('key', 'value', 'type')
+                ->get()
+                ->mapWithKeys(function ($setting) {
+                    $castValue = $this->castValue($setting->value, $setting->type ?? 'string');
 
-                    return [$key => $castValue];
+                    return [$setting->key => $castValue];
                 })
                 ->toArray();
         });

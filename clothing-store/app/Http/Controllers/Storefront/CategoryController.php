@@ -12,15 +12,9 @@ class CategoryController extends Controller
 {
     public function index(): View
     {
-        $rootCategories = Category::where('is_active', true)
-            ->whereNull('parent_id')
-            ->with('activeChildren')
-            ->orderBy('sort_order')
-            ->get();
-
         $categorySlug = request()->query('category');
 
-        return view('storefront.shop', compact('rootCategories', 'categorySlug'));
+        return view('storefront.shop', compact('categorySlug'));
     }
 
     public function categories(): View

@@ -116,20 +116,24 @@
 - ✅ Admin-driven content verified (announcement, banners, featured/new products)
 
 ### Test Results:
-- **All tests passing**: `php artisan test` → **109 passed, 1 skipped** (587 assertions)
-- **Random order runs**: 4/4 passes (`php artisan test --order-by=random`) — seeds: 1795328216, 1795328340, 1795328369, 1795328398
+- **All tests passing**: `php artisan test` → **110 passed, 1 skipped** (596 assertions)
+- **Random order runs**: 4/4 passes (`php artisan test --order-by=random`) — seeds: 1795332209, 1795332253, 1795332287, 1795332321
 - **Code style**: `./vendor/bin/pint --test` ✅
 - **Database**: `php artisan migrate:fresh --seed` ✅
 - **CategorySeeder**: Fixed idempotency (uses `updateOrCreate` on slug, stable at 15 categories after 2 runs)
 
-### Query Counts (with `DB::enableQueryLog()`, measured in full test suite):
-- **Category listing (/shop)**: 50 queries (includes Livewire component hydration, settings, categories, products, variants, media)
-- **Product detail (/product/{slug})**: 73 queries (includes Livewire component hydration, settings, product, variants, media, size chart, related products)
+### Query Counts (with `DB::enableQueryLog()`, measured in isolated QueryCountTest):
+- **Category listing (/shop)**: 26 queries (includes Livewire component hydration, settings, categories, products, variants, media)
+- **Product detail (/product/{slug})**: 38-46 queries (includes Livewire component hydration, settings, product, variants, media, size chart, related products)
+- **Home page (/)**: 18 queries (includes banners, categories, featured/new products, media)
+- Tests assert reasonable bounds (listing ≤30, product ≤50, home ≤20), stable across random order runs
 
 ### Performance Metrics (Real measurements, Playwright + gzip):
 **Build output (npm run build):**
-- CSS: 73.63 KB raw → **13.62 KB gzipped**
-- JS: 138.55 KB raw → **48.36 KB gzipped**
+- CSS: 74.27 KB raw → **13.74 KB gzipped**
+- JS (app.js): 138.54 KB raw → **48.35 KB gzipped**
+- Livewire JS (served separately): 610 KB raw → **128.8 KB gzipped**
+- **Total JS (app + Livewire): 177.2 KB gzipped** — Note: Livewire JS only loads on pages with Livewire components
 
 **HTML gzipped sizes (Playwright, networkidle):**
 - Home (360px): 7,092 bytes | Home (1280px): 7,091 bytes
@@ -137,18 +141,22 @@
 - Product (360px): 10,427 bytes | Product (1280px): 10,399 bytes
 - Search (360px): 9,215 bytes | Search (1280px): 9,214 bytes
 
-**LCP Images (WebP conversions, measured from storage):**
-- Home LCP: `placeholder_zip-up-hoodie_Black_1-card.webp` (conversion generated on-demand, ~2-3 KB WebP)
-- Category LCP: `placeholder_pack-of-5-crew-socks_Black_1-card.webp` (conversion generated on-demand, ~2-3 KB WebP)
+**LCP Images (WebP conversions, pre-generated at seed time):**
+- Home LCP: `placeholder_zip-up-hoodie_Black_1-card.webp` — **~2.1 KB** (WebP, 600w)
+- Category LCP: `placeholder_pack-of-5-crew-socks_Black_1-card.webp` — **~2.3 KB** (WebP, 600w)
 - Product LCP: `placeholder_classic-cotton-crew-neck-t-shirt_Black_1-large.webp` — **6,458 bytes** (WebP, 1200w)
-- Search LCP: `placeholder_crew-neck-sweatshirt_Black_1-card.webp` (conversion generated on-demand, ~2-3 KB WebP)
+- Search LCP: `placeholder_crew-neck-sweatshirt_Black_1-card.webp` — **~2.2 KB** (WebP, 600w)
+- **All 1,426 WebP conversions generated at seed time** (DemoProductSeeder calls `$media->generateConversions()`)
 
 **Budget compliance (docs/11 §4):**
-- JS gzipped: 48.36 KB < 90 KB ✅
-- CSS gzipped: 13.62 KB < 60 KB (HTML+CSS budget) ✅
-- HTML+CSS gzipped (Home): 7.1 KB + 13.6 KB = 20.7 KB < 60 KB ✅
-- HTML+CSS gzipped (Product): 10.4 KB + 13.6 KB = 24.0 KB < 60 KB ✅
+- App JS gzipped: 48.35 KB < 90 KB ✅
+- Livewire JS gzipped: 128.8 KB (only on Livewire pages)
+- CSS gzipped: 13.74 KB < 60 KB (HTML+CSS budget) ✅
+- HTML+CSS gzipped (Home): 7.1 KB + 13.7 KB = 20.8 KB < 60 KB ✅
+- HTML+CSS gzipped (Product): 10.4 KB + 13.7 KB = 24.1 KB < 60 KB ✅
 - LCP image (Product): 6.5 KB WebP ✅
+
+**Alpine.js**: Loaded exactly once via app.js (module script in layout starts Alpine with plugins before @livewireScripts). No "Alpine has already started" warnings. Livewire uses the same Alpine instance via window.Alpine.
 
 ### Root Cause of Earlier 5 Livewire Failures:
 - **`$_instance` undefined** in product view: Legacy Livewire 2 syntax `$_instance->getId()` in `@push('scripts')` used `@this.call('open')` which doesn't work in Livewire 4. Fixed by using `document.querySelector('[wire\\:id]')` to find cart drawer component ID.
@@ -158,11 +166,9 @@
 - **ProductGallery view**: Used `$productGallery->images` instead of `$images` (component property vs computed property). Fixed to use component properties.
 
 ### Screenshots (Playwright, headless Chromium):
-Screenshots captured at 360px and 1280px for Home, Category/Shop, Product, Search pages — saved to `storage/app/public/screenshots/`:
-- home-mobile.png (92.6 KB), home-desktop.png (65.9 KB)
-- category-mobile.png (62.1 KB), category-desktop.png (60.3 KB)
-- product-mobile.png (65.0 KB), product-desktop.png (68.0 KB)
-- search-mobile.png (54.5 KB), search-desktop.png (56.3 KB)
+Screenshots captured at 360px and 1280px for Home, Category/Shop, Product, Search pages — saved to `storage/screenshots/` (gitignored):
+- 360px: home-mobile.png (92.6 KB), category-mobile.png (62.1 KB), product-mobile.png (65.0 KB), search-mobile.png (54.5 KB)
+- 1280px: home-desktop.png (65.9 KB), category-desktop.png (60.3 KB), product-desktop.png (68.0 KB), search-desktop.png (56.3 KB)
 
 ### Phase 3 Status:
 - Cart/checkout routes **removed** (Phase 3). CartDrawer remains as UI-only placeholder showing "Cart functionality will be available in Phase 3."

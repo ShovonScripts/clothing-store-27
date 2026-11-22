@@ -8,6 +8,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/screenshots
 /vendor
 .env
 .env.backup

@@ -9,6 +9,7 @@
     <meta name="description" content="{{ $description ?? config('store.description', '') }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
 
     @stack('styles')
 </head>
@@ -24,6 +25,16 @@
     @include('components.storefront.whatsapp-float')
 
     @stack('scripts')
+    
+    <script type="module">
+        import Alpine from 'alpinejs';
+        import collapse from '@alpinejs/collapse';
+        import focus from '@alpinejs/focus';
+        window.Alpine = Alpine;
+        Alpine.plugin(collapse);
+        Alpine.plugin(focus);
+        Alpine.start();
+    </script>
     @livewireScripts
 </body>
 </html>

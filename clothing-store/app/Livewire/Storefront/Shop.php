@@ -38,9 +38,30 @@ class Shop extends Component
 
     public int $perPage = 12;
 
+    protected Collection $categories;
+
+    protected Collection $colorsList;
+
+    protected array $priceRange;
+
     public function mount(string $categorySlug = ''): void
     {
         $this->categorySlug = $categorySlug;
+
+        $this->categories = Category::where('is_active', true)
+            ->whereNull('parent_id')
+            ->with('activeChildren')
+            ->orderBy('sort_order')
+            ->get();
+
+        $this->colorsList = Color::where('is_active', true)->orderBy('sort_order')->get();
+
+        $min = Product::where('is_active', true)->min('price') ?? 0;
+        $max = Product::where('is_active', true)->max('price') ?? 10000;
+        $this->priceRange = [
+            'min' => (int) floor($min / 100) * 100,
+            'max' => (int) ceil($max / 100) * 100,
+        ];
     }
 
     public function updatingSizes(): void
@@ -148,27 +169,17 @@ class Shop extends Component
 
     public function getCategoriesProperty(): Collection
     {
-        return Category::where('is_active', true)
-            ->whereNull('parent_id')
-            ->with('activeChildren')
-            ->orderBy('sort_order')
-            ->get();
+        return $this->categories;
     }
 
     public function getColorsProperty(): Collection
     {
-        return Color::where('is_active', true)->orderBy('sort_order')->get();
+        return $this->colorsList;
     }
 
     public function getPriceRangeProperty(): array
     {
-        $min = Product::where('is_active', true)->min('price') ?? 0;
-        $max = Product::where('is_active', true)->max('price') ?? 10000;
-
-        return [
-            'min' => (int) floor($min / 100) * 100,
-            'max' => (int) ceil($max / 100) * 100,
-        ];
+        return $this->priceRange;
     }
 
     public function render()
