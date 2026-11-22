@@ -26,14 +26,15 @@
 
     @stack('scripts')
     
-    <script type="module">
-        import Alpine from 'alpinejs';
-        import collapse from '@alpinejs/collapse';
-        import focus from '@alpinejs/focus';
-        window.Alpine = Alpine;
-        Alpine.plugin(collapse);
-        Alpine.plugin(focus);
-        Alpine.start();
+    <script>
+        // Register Alpine plugins via Livewire's alpine:init event
+        document.addEventListener('alpine:init', () => {
+            import('alpinejs').then(({ default: Alpine }) => {
+                import('@alpinejs/collapse').then(({ default: collapse }) => Alpine.plugin(collapse));
+                import('@alpinejs/focus').then(({ default: focus }) => Alpine.plugin(focus));
+                window.Alpine = Alpine;
+            });
+        });
     </script>
     @livewireScripts
 </body>

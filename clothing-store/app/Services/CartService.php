@@ -4,79 +4,131 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\ProductVariant;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Session;
 
 class CartService
 {
-    public const CART_SESSION_KEY = 'cart';
+    public const SESSION_KEY = 'cart';
 
-    public function getCart(): Collection
+    public function get(): Collection
     {
-        return collect(Session::get(self::CART_SESSION_KEY, []));
+        $sessionCart = session()->get(self::SESSION_KEY, []);
+
+        return collect($sessionCart)->map(function (int $qty, string $variantId) {
+            return $this->revalidateItem($variantId, $qty);
+        })->filter()->values();
     }
 
-    public function add(int $variantId, int $quantity = 1): void
+    public function getRaw(): array
     {
-        $cart = $this->getCart()->toArray();
-
-        if (isset($cart[$variantId])) {
-            $cart[$variantId] += $quantity;
-        } else {
-            $cart[$variantId] = $quantity;
-        }
-
-        Session::put(self::CART_SESSION_KEY, $cart);
-    }
-
-    public function update(int $variantId, int $quantity): void
-    {
-        $cart = $this->getCart()->toArray();
-
-        if ($quantity <= 0) {
-            unset($cart[$variantId]);
-        } else {
-            $cart[$variantId] = $quantity;
-        }
-
-        Session::put(self::CART_SESSION_KEY, $cart);
-    }
-
-    public function remove(int $variantId): void
-    {
-        $cart = $this->getCart()->toArray();
-        unset($cart[$variantId]);
-        Session::put(self::CART_SESSION_KEY, $cart);
-    }
-
-    public function clear(): void
-    {
-        Session::forget(self::CART_SESSION_KEY);
+        return session()->get(self::SESSION_KEY, []);
     }
 
     public function count(): int
     {
-        return $this->getCart()->sum();
+        return $this->get()->sum('qty');
     }
 
-    public function isEmpty(): bool
+    public function subtotal(): int
     {
-        return $this->getCart()->isEmpty();
+        return $this->get()->sum(fn ($item) => $item['price'] * $item['qty']);
     }
 
-    public function getVariantIds(): array
+    public function add(int $variantId, int $qty = 1): array
     {
-        return array_keys($this->getCart()->toArray());
+        $cart = $this->getRaw();
+
+        $currentQty = $cart[$variantId] ?? 0;
+        $newQty = $currentQty + $qty;
+
+        $validated = $this->revalidateItem($variantId, $newQty);
+        if (! $validated) {
+            throw new \InvalidArgumentException('Variant unavailable or insufficient stock');
+        }
+
+        $cart[$variantId] = $validated['qty'];
+        session()->put(self::SESSION_KEY, $cart);
+
+        return $validated;
     }
 
-    public function getQuantity(int $variantId): int
+    public function update(int $variantId, int $qty): ?array
     {
-        return $this->getCart()->get($variantId, 0);
+        $cart = $this->getRaw();
+
+        if ($qty <= 0) {
+            unset($cart[$variantId]);
+            session()->put(self::SESSION_KEY, $cart);
+
+            return null;
+        }
+
+        $validated = $this->revalidateItem($variantId, $qty);
+        if (! $validated) {
+            throw new \InvalidArgumentException('Variant unavailable or insufficient stock');
+        }
+
+        $cart[$variantId] = $validated['qty'];
+        session()->put(self::SESSION_KEY, $cart);
+
+        return $validated;
     }
 
-    public function getSubtotal(): int
+    public function remove(int $variantId): void
     {
-        // This will be computed properly with prices from DB in the actual implementation
-        return 0;
+        $cart = $this->getRaw();
+        unset($cart[$variantId]);
+        session()->put(self::SESSION_KEY, $cart);
+    }
+
+    public function clear(): void
+    {
+        session()->forget(self::SESSION_KEY);
+    }
+
+    public function has(int $variantId): bool
+    {
+        $cart = $this->getRaw();
+
+        return isset($cart[$variantId]);
+    }
+
+    private function revalidateItem(int $variantId, int $requestedQty): ?array
+    {
+        $variant = ProductVariant::with('product')->find($variantId);
+
+        if (! $variant) {
+            return null;
+        }
+
+        if (! $variant->is_active || ! $variant->product->is_active) {
+            return null;
+        }
+
+        $availableStock = $variant->stock;
+        if ($availableStock < $requestedQty) {
+            $requestedQty = $availableStock;
+        }
+
+        if ($requestedQty <= 0) {
+            return null;
+        }
+
+        $price = $variant->price ?? $variant->product->price;
+
+        return [
+            'variant_id' => $variantId,
+            'product_id' => $variant->product_id,
+            'product_name' => $variant->product->getDisplayNameAttribute(),
+            'product_slug' => $variant->product->slug,
+            'variant_size' => $variant->size,
+            'variant_color' => $variant->color?->name ?? '',
+            'variant_color_hex' => $variant->color?->hex ?? '#000000',
+            'image' => $variant->product->getFirstImageUrl('thumb'),
+            'price' => $price,
+            'qty' => $requestedQty,
+            'max_stock' => $availableStock,
+        ];
     }
 }

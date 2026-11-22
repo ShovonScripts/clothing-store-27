@@ -8,6 +8,10 @@ use App\Http\Controllers\Storefront\PageController;
 use App\Http\Controllers\Storefront\ProductController;
 use App\Http\Controllers\Storefront\RobotsController;
 use App\Http\Controllers\Storefront\SitemapController;
+use App\Livewire\Storefront\CartPage;
+use App\Livewire\Storefront\Checkout;
+use App\Livewire\Storefront\OrderSuccess;
+use App\Livewire\Storefront\TrackOrder;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -23,6 +27,11 @@ Route::get('/search', [ProductController::class, 'search'])->name('search');
 Route::get('/search/suggestions', [ProductController::class, 'suggestions'])->name('search.suggestions');
 
 Route::post('/locale', [LocaleController::class, 'switch'])->name('locale.switch');
+
+Route::get('/cart', CartPage::class)->name('cart.page');
+Route::get('/checkout', Checkout::class)->name('checkout');
+Route::get('/order/success/{order}', OrderSuccess::class)->name('order.success');
+Route::get('/track', TrackOrder::class)->name('track.order');
 
 Route::prefix('api')->group(function () {
     Route::get('/districts', [DistrictController::class, 'index'])->name('api.districts.index');
