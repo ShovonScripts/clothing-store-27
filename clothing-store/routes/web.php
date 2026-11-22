@@ -17,12 +17,6 @@ Route::get('/categories', [CategoryController::class, 'categories'])->name('cate
 
 Route::get('/product/{product:slug}', [ProductController::class, 'show'])->name('product.show');
 
-Route::post('/cart/add', [ProductController::class, 'addToCart'])->name('cart.add');
-Route::patch('/cart/update/{variant}', [ProductController::class, 'updateCart'])->name('cart.update');
-Route::delete('/cart/remove/{variant}', [ProductController::class, 'removeFromCart'])->name('cart.remove');
-Route::post('/cart/clear', [ProductController::class, 'clearCart'])->name('cart.clear');
-Route::get('/cart/count', [ProductController::class, 'cartCount'])->name('cart.count');
-
 Route::get('/page/{page:slug}', [PageController::class, 'show'])->name('pages.show');
 
 Route::get('/search', [ProductController::class, 'search'])->name('search');

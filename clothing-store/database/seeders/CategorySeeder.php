@@ -124,7 +124,7 @@ class CategorySeeder extends Seeder
         ];
 
         foreach ($categories as $category) {
-            Category::updateOrInsert(
+            Category::updateOrCreate(
                 ['slug' => $category['slug']],
                 $category
             );
@@ -164,7 +164,7 @@ class CategorySeeder extends Seeder
             ];
 
             foreach ($subCategories as $sub) {
-                Category::updateOrInsert(
+                Category::updateOrCreate(
                     ['slug' => $sub['slug']],
                     $sub
                 );

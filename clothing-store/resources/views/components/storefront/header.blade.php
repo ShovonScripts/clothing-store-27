@@ -47,13 +47,10 @@
                     </button>
                 </div>
 
-                <button @click="$dispatch('open-cart')" class="relative p-2 text-gray-600 hover:text-gray-900" aria-label="{{ __('Cart') }} ({{ $cartCount ?? 0 }})">
+                <button @click="$dispatch('open-cart')" class="relative p-2 text-gray-600 hover:text-gray-900" aria-label="{{ __('Cart') }}">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a2 2 0 00-2-2H6a2 2 0 00-2 2v4m8 0a2 2 0 012 2v4m0 0H6m10 0l-2 2h-8a2 2 0 01-2-2V7a2 2 0 012-2h8a2 2 0 012 2v4m0 0l2 2" />
                     </svg>
-                    <span class="absolute -top-1 -right-1 bg-accent text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                        {{ $cartCount ?? 0 }}
-                    </span>
                 </button>
 
                 <div class="sm:hidden flex items-center gap-2">

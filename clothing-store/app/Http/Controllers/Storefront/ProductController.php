@@ -6,17 +6,12 @@ namespace App\Http\Controllers\Storefront;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
-use App\Services\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function __construct(
-        protected CartService $cartService
-    ) {}
-
     public function show(string $slug): View
     {
         $product = Product::where('slug', $slug)
@@ -97,56 +92,5 @@ class ProductController extends Controller
                 'sku' => $product->sku,
             ];
         }));
-    }
-
-    public function addToCart(Request $request): JsonResponse
-    {
-        $request->validate([
-            'variant_id' => 'required|exists:product_variants,id',
-            'quantity' => 'required|integer|min:1|max:99',
-        ]);
-
-        $this->cartService->add($request->integer('variant_id'), $request->integer('quantity'));
-
-        return response()->json([
-            'success' => true,
-            'cart_count' => $this->cartService->count(),
-        ]);
-    }
-
-    public function updateCart(Request $request, int $variantId): JsonResponse
-    {
-        $request->validate([
-            'quantity' => 'required|integer|min:0|max:99',
-        ]);
-
-        $this->cartService->update($variantId, $request->integer('quantity'));
-
-        return response()->json([
-            'success' => true,
-            'cart_count' => $this->cartService->count(),
-        ]);
-    }
-
-    public function removeFromCart(int $variantId): JsonResponse
-    {
-        $this->cartService->remove($variantId);
-
-        return response()->json([
-            'success' => true,
-            'cart_count' => $this->cartService->count(),
-        ]);
-    }
-
-    public function clearCart(): JsonResponse
-    {
-        $this->cartService->clear();
-
-        return response()->json(['success' => true]);
-    }
-
-    public function cartCount(): JsonResponse
-    {
-        return response()->json(['count' => $this->cartService->count()]);
     }
 }
