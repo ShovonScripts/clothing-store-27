@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +22,13 @@ class OrderStatusHistory extends Model
         'to_payment_status',
         'changed_by',
         'note',
+    ];
+
+    protected $casts = [
+        'from_status' => OrderStatus::class,
+        'to_status' => OrderStatus::class,
+        'from_payment_status' => PaymentStatus::class,
+        'to_payment_status' => PaymentStatus::class,
     ];
 
     public function order(): BelongsTo

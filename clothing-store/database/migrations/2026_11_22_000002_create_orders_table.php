@@ -29,7 +29,7 @@ return new class extends Migration
                 'failed',
             ])->default('pending');
             $table->enum('payment_method', ['cod', 'bkash'])->default('cod');
-            $table->enum('payment_status', ['unpaid', 'pending_verification', 'verified', 'refunded'])->default('unpaid');
+            $table->enum('payment_status', ['unpaid', 'awaiting_verification', 'verified', 'refunded'])->default('unpaid');
             $table->string('bkash_trxid')->nullable()->unique();
             $table->string('bkash_sender')->nullable();
             $table->unsignedInteger('bkash_amount')->nullable();

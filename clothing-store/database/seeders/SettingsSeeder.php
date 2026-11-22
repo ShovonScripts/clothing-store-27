@@ -28,7 +28,7 @@ class SettingsSeeder extends Seeder
             ['key' => 'bkash_enabled', 'value' => '1', 'type' => 'bool', 'group' => 'payments'],
             ['key' => 'delivery_inside_dhaka', 'value' => '70', 'type' => 'int', 'group' => 'delivery'],
             ['key' => 'delivery_outside_dhaka', 'value' => '130', 'type' => 'int', 'group' => 'delivery'],
-            ['key' => 'free_delivery_over', 'value' => '0', 'type' => 'int', 'group' => 'delivery'],
+            ['key' => 'free_delivery_over', 'value' => '500000', 'type' => 'int', 'group' => 'delivery'],
             ['key' => 'low_stock_threshold', 'value' => '5', 'type' => 'int', 'group' => 'inventory'],
             ['key' => 'max_pending_orders_per_phone_per_day', 'value' => '3', 'type' => 'int', 'group' => 'security'],
             ['key' => 'min_order_amount', 'value' => '0', 'type' => 'int', 'group' => 'orders'],

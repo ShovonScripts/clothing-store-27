@@ -10,13 +10,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('order_status_history', function (Blueprint $table) {
+        Schema::create('order_status_histories', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
             $table->string('from_status')->nullable();
             $table->string('to_status');
             $table->string('from_payment_status')->nullable();
-            $table->string('to_payment_status')->nullable();
+            $table->string('to_payment_status');
             $table->foreignId('changed_by')->nullable()->constrained('users')->onDelete('set null');
             $table->text('note')->nullable();
             $table->timestamps();
@@ -27,6 +27,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('order_status_history');
+        Schema::dropIfExists('order_status_histories');
     }
 };

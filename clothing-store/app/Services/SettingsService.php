@@ -132,22 +132,22 @@ class SettingsService
 
     public function freeDeliveryOver(): int
     {
-        return $this->get('free_delivery_over', 0);
+        return (int) $this->get('free_delivery_over', 0);
     }
 
     public function lowStockThreshold(): int
     {
-        return $this->get('low_stock_threshold', 5);
+        return (int) $this->get('low_stock_threshold', 5);
     }
 
     public function maxPendingOrdersPerPhonePerDay(): int
     {
-        return $this->get('max_pending_orders_per_phone_per_day', 3);
+        return (int) $this->get('max_pending_orders_per_phone_per_day', 3);
     }
 
     public function minOrderAmount(): int
     {
-        return $this->get('min_order_amount', 0);
+        return (int) $this->get('min_order_amount', 0);
     }
 
     public function announcementText(): string

@@ -18,7 +18,7 @@ class DeliveryChargeService
         $area = Area::find($areaId);
 
         if (! $district || ! $area) {
-            return $this->settings->deliveryOutsideDhaka();
+            return $this->settings->deliveryOutsideDhaka() * 100;
         }
 
         $zone = $area->is_inside_city ? 'inside_dhaka' : 'outside_dhaka';
@@ -30,7 +30,7 @@ class DeliveryChargeService
             return 0;
         }
 
-        return $charge;
+        return $charge * 100;
     }
 
     public function getZone(int $districtId, int $areaId): string

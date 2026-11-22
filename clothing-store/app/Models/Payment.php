@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,7 @@ class Payment extends Model
     protected $casts = [
         'amount' => 'integer',
         'verified_at' => 'datetime',
+        'status' => PaymentStatus::class,
     ];
 
     public function order(): BelongsTo
@@ -41,11 +43,11 @@ class Payment extends Model
 
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === PaymentStatus::Unpaid;
     }
 
     public function isVerified(): bool
     {
-        return $this->status === 'verified';
+        return $this->status === PaymentStatus::Verified;
     }
 }

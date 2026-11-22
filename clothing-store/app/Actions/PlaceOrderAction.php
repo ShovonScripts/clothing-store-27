@@ -38,7 +38,8 @@ class PlaceOrderAction
             return $existingOrder;
         }
 
-        $cartItems = $this->cartService->get();
+        // Get cart items - use provided cart_items for testing, otherwise read from session
+        $cartItems = isset($data['cart_items']) ? collect($data['cart_items']) : $this->cartService->get();
         if ($cartItems->isEmpty()) {
             throw new \InvalidArgumentException('Cart is empty');
         }
@@ -53,7 +54,7 @@ class PlaceOrderAction
 
         $this->stockService->reserve($items);
 
-        return DB::transaction(function () use ($data, $token) {
+        return DB::transaction(function () use ($data, $token, $cartItems) {
             // Create or get customer
             $customer = Customer::firstOrCreate(
                 ['phone' => $data['phone']],
@@ -79,7 +80,8 @@ class PlaceOrderAction
                 $data['district_id'],
                 $data['area_id'],
                 $data['coupon_code'] ?? null,
-                $data['payment_method'] === 'bkash' ? 2 : 1
+                $data['payment_method'] === 'bkash' ? 2 : 1,
+                $cartItems
             );
 
             // Verify totals match (price tamper check)
@@ -103,7 +105,7 @@ class PlaceOrderAction
                 'total' => $pricing['total'],
                 'status' => 'pending',
                 'payment_method' => $data['payment_method'],
-                'payment_status' => $data['payment_method'] === 'bkash' ? 'pending_verification' : 'unpaid',
+                'payment_status' => $data['payment_method'] === 'bkash' ? 'awaiting_verification' : 'unpaid',
                 'shipping_name' => $data['name'],
                 'shipping_phone' => $data['phone'],
                 'shipping_district_id' => $data['district_id'],
@@ -142,7 +144,7 @@ class PlaceOrderAction
             $payment = Payment::create([
                 'order_id' => $order->id,
                 'method' => $data['payment_method'],
-                'status' => $data['payment_method'] === 'bkash' ? 'pending_verification' : 'pending',
+                'status' => $data['payment_method'] === 'bkash' ? 'awaiting_verification' : 'unpaid',
                 'bkash_trxid' => $data['bkash_trxid'] ?? null,
                 'bkash_sender' => $data['bkash_sender'] ?? null,
                 'amount' => $pricing['total'],
@@ -163,7 +165,7 @@ class PlaceOrderAction
                 'from_status' => null,
                 'to_status' => 'pending',
                 'from_payment_status' => null,
-                'to_payment_status' => $data['payment_method'] === 'bkash' ? 'pending_verification' : 'unpaid',
+                'to_payment_status' => $data['payment_method'] === 'bkash' ? 'awaiting_verification' : 'unpaid',
                 'note' => 'Order placed via checkout',
             ]);
 

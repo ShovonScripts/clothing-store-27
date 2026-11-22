@@ -35,8 +35,9 @@ class CartService
         return $this->get()->sum(fn ($item) => $item['price'] * $item['qty']);
     }
 
-    public function add(int $variantId, int $qty = 1): array
+    public function add(string|int $variantId, int $qty = 1): array
     {
+        $variantId = (string) $variantId;
         $cart = $this->getRaw();
 
         $currentQty = $cart[$variantId] ?? 0;
@@ -53,8 +54,9 @@ class CartService
         return $validated;
     }
 
-    public function update(int $variantId, int $qty): ?array
+    public function update(string|int $variantId, int $qty): ?array
     {
+        $variantId = (string) $variantId;
         $cart = $this->getRaw();
 
         if ($qty <= 0) {
@@ -75,11 +77,20 @@ class CartService
         return $validated;
     }
 
-    public function remove(int $variantId): void
+    public function remove(string|int $variantId): void
     {
+        $variantId = (string) $variantId;
         $cart = $this->getRaw();
         unset($cart[$variantId]);
         session()->put(self::SESSION_KEY, $cart);
+    }
+
+    public function has(string|int $variantId): bool
+    {
+        $variantId = (string) $variantId;
+        $cart = $this->getRaw();
+
+        return isset($cart[$variantId]);
     }
 
     public function clear(): void
@@ -87,16 +98,9 @@ class CartService
         session()->forget(self::SESSION_KEY);
     }
 
-    public function has(int $variantId): bool
+    private function revalidateItem(string|int $variantId, int $requestedQty): ?array
     {
-        $cart = $this->getRaw();
-
-        return isset($cart[$variantId]);
-    }
-
-    private function revalidateItem(int $variantId, int $requestedQty): ?array
-    {
-        $variant = ProductVariant::with('product')->find($variantId);
+        $variant = ProductVariant::with('product')->find((int) $variantId);
 
         if (! $variant) {
             return null;

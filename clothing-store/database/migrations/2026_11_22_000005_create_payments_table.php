@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
             $table->enum('method', ['cod', 'bkash']);
-            $table->enum('status', ['pending', 'verified', 'rejected', 'refunded'])->default('pending');
+            $table->enum('status', ['unpaid', 'awaiting_verification', 'verified', 'rejected', 'refunded'])->default('unpaid');
             $table->string('bkash_trxid')->nullable()->unique();
             $table->string('bkash_sender')->nullable();
             $table->unsignedInteger('amount')->nullable();
