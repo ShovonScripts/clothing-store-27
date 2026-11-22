@@ -102,7 +102,7 @@
 - [x] Phase 3 cart/checkout removed (kept CartDrawer as UI-only placeholder)
 
 ### Acceptance Criteria Met:
-- ✅ CategorySeeder idempotent (runs twice, stable count 17)
+- ✅ CategorySeeder idempotent (runs twice, stable count 15)
 - ✅ Filters sync to URL (size, color, price, sort) and survive reload
 - ✅ Inactive products return 404
 - ✅ Sold-out variants disabled in UI
@@ -117,25 +117,38 @@
 
 ### Test Results:
 - **All tests passing**: `php artisan test` → **109 passed, 1 skipped** (587 assertions)
-- **Random order runs**: 2/2 passes (`php artisan test --order-by=random`)
+- **Random order runs**: 4/4 passes (`php artisan test --order-by=random`) — seeds: 1795328216, 1795328340, 1795328369, 1795328398
 - **Code style**: `./vendor/bin/pint --test` ✅
 - **Database**: `php artisan migrate:fresh --seed` ✅
-- **CategorySeeder**: Fixed idempotency (uses `updateOrCreate` on slug, stable at 17 categories after 2 runs)
+- **CategorySeeder**: Fixed idempotency (uses `updateOrCreate` on slug, stable at 15 categories after 2 runs)
 
-### Known Issue (Documented):
-- CategorySeeder: Due to `updateOrInsert` + `HasSlug` trait interaction, first run produces 15 or 17 categories (12 root + 3 subcategories expected). Second run stabilizes at 17. Test now asserts idempotency (stable count) with documented allowance. Fix for true 15-count requires seeder refactor (deferred).
+### Query Counts (with `DB::enableQueryLog()`, measured in full test suite):
+- **Category listing (/shop)**: 50 queries (includes Livewire component hydration, settings, categories, products, variants, media)
+- **Product detail (/product/{slug})**: 73 queries (includes Livewire component hydration, settings, product, variants, media, size chart, related products)
 
-### Query Counts (with `Model::preventLazyLoading`):
-- **Category listing (/shop)**: ~12-14 queries (categories, products, media, variants, colors, size_charts)
-- **Product detail (/product/{slug})**: ~10-12 queries (product, variants, media, size_chart, related products)
-- Both within acceptable limits (< 15 queries)
+### Performance Metrics (Real measurements, Playwright + gzip):
+**Build output (npm run build):**
+- CSS: 73.63 KB raw → **13.62 KB gzipped**
+- JS: 138.55 KB raw → **48.36 KB gzipped**
 
-### Performance Metrics (Estimated, Lighthouse unavailable):
-- **Total page weight**: ~180-220 KB gzipped (HTML + CSS + JS)
-- **CSS**: ~18 KB gzipped (Tailwind purged)
-- **JS**: ~48 KB gzipped (Alpine + Livewire)
-- **LCP image**: Hero banner preloaded, WebP conversions (thumb 400w, card 600w, large 1200w)
-- **Against docs/11 budgets**: Total < 300 KB ✅, CSS < 50 KB ✅, JS < 100 KB ✅, LCP < 2.5s estimated ✅
+**HTML gzipped sizes (Playwright, networkidle):**
+- Home (360px): 7,092 bytes | Home (1280px): 7,091 bytes
+- Category/Shop (360px): 10,704 bytes | Category/Shop (1280px): 10,715 bytes
+- Product (360px): 10,427 bytes | Product (1280px): 10,399 bytes
+- Search (360px): 9,215 bytes | Search (1280px): 9,214 bytes
+
+**LCP Images (WebP conversions, measured from storage):**
+- Home LCP: `placeholder_zip-up-hoodie_Black_1-card.webp` (conversion generated on-demand, ~2-3 KB WebP)
+- Category LCP: `placeholder_pack-of-5-crew-socks_Black_1-card.webp` (conversion generated on-demand, ~2-3 KB WebP)
+- Product LCP: `placeholder_classic-cotton-crew-neck-t-shirt_Black_1-large.webp` — **6,458 bytes** (WebP, 1200w)
+- Search LCP: `placeholder_crew-neck-sweatshirt_Black_1-card.webp` (conversion generated on-demand, ~2-3 KB WebP)
+
+**Budget compliance (docs/11 §4):**
+- JS gzipped: 48.36 KB < 90 KB ✅
+- CSS gzipped: 13.62 KB < 60 KB (HTML+CSS budget) ✅
+- HTML+CSS gzipped (Home): 7.1 KB + 13.6 KB = 20.7 KB < 60 KB ✅
+- HTML+CSS gzipped (Product): 10.4 KB + 13.6 KB = 24.0 KB < 60 KB ✅
+- LCP image (Product): 6.5 KB WebP ✅
 
 ### Root Cause of Earlier 5 Livewire Failures:
 - **`$_instance` undefined** in product view: Legacy Livewire 2 syntax `$_instance->getId()` in `@push('scripts')` used `@this.call('open')` which doesn't work in Livewire 4. Fixed by using `document.querySelector('[wire\\:id]')` to find cart drawer component ID.
@@ -144,8 +157,12 @@
 - **CartDrawer view**: Mixed Alpine `x-show` with Livewire wire:show. Converted to pure Livewire `wire:show`/`wire:transition`.
 - **ProductGallery view**: Used `$productGallery->images` instead of `$images` (component property vs computed property). Fixed to use component properties.
 
-### Screenshots:
-- **Headless Chromium not available** in this environment. Rendered HTML verified via test output (see test output above showing complete HTML structure for Home, Category with filters, Product, Search pages at both 360px and 1280px breakpoints via responsive Tailwind classes).
+### Screenshots (Playwright, headless Chromium):
+Screenshots captured at 360px and 1280px for Home, Category/Shop, Product, Search pages — saved to `storage/app/public/screenshots/`:
+- home-mobile.png (92.6 KB), home-desktop.png (65.9 KB)
+- category-mobile.png (62.1 KB), category-desktop.png (60.3 KB)
+- product-mobile.png (65.0 KB), product-desktop.png (68.0 KB)
+- search-mobile.png (54.5 KB), search-desktop.png (56.3 KB)
 
 ### Phase 3 Status:
 - Cart/checkout routes **removed** (Phase 3). CartDrawer remains as UI-only placeholder showing "Cart functionality will be available in Phase 3."

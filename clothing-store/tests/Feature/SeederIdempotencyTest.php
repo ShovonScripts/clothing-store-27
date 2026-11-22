@@ -100,12 +100,10 @@ class SeederIdempotencyTest extends TestCase
         $countAfterSecond = Category::count();
 
         $this->assertEquals($countAfterFirst, $countAfterSecond);
-        // Verify the seeder produces a reasonable number of categories (15 expected: 12 root + 3 subcategories)
-        // Due to a known issue with updateOrInsert and slug generation in HasSlug trait,
-        // the first run may produce 15 or 17 categories. The key assertion is idempotency:
-        // running the seeder twice should produce the same count.
-        $this->assertGreaterThanOrEqual(15, $countAfterFirst);
-        $this->assertLessThanOrEqual(17, $countAfterFirst);
+        // 15 categories expected: 12 root + 3 subcategories under "Shirts"
+        // Verified with: php artisan migrate:fresh --seed (produces exactly 15)
+        $this->assertEquals(15, $countAfterFirst);
+        $this->assertEquals(15, $countAfterSecond);
     }
 
     public function test_page_seeder_is_idempotent(): void

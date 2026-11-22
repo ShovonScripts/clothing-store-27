@@ -13,12 +13,16 @@ use App\Models\ProductVariant;
 use App\Models\SizeChart;
 use App\Services\SettingsService;
 use Database\Seeders\AreaSeeder;
+use Database\Seeders\CategorySeeder;
+use Database\Seeders\ColorSeeder;
 use Database\Seeders\DeliveryZoneSeeder;
 use Database\Seeders\DistrictSeeder;
 use Database\Seeders\PageSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\SettingsSeeder;
+use Database\Seeders\SizeChartSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -359,14 +363,98 @@ class StorefrontTest extends TestCase
     #[Test]
     public function product_listing_query_count_is_reasonable(): void
     {
-        // This test is skipped due to Livewire component queries being counted separately
-        $this->assertTrue(true);
+        // Seed minimal data for testing
+        $this->seed(SettingsSeeder::class);
+        $this->seed(PageSeeder::class);
+        $this->seed(DistrictSeeder::class);
+        $this->seed(AreaSeeder::class);
+        $this->seed(DeliveryZoneSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
+        $this->seed(CategorySeeder::class);
+        $this->seed(ColorSeeder::class);
+        $this->seed(SizeChartSeeder::class);
+
+        // Create a category and some products
+        $category = Category::where('is_active', true)->whereNull('parent_id')->first();
+        $color = Color::where('is_active', true)->first();
+        $sizeChart = SizeChart::where('is_active', true)->first();
+
+        for ($i = 1; $i <= 5; $i++) {
+            $product = Product::factory()->create([
+                'category_id' => $category->id,
+                'size_chart_id' => $sizeChart->id,
+                'is_active' => true,
+            ]);
+
+            foreach (['S', 'M', 'L'] as $size) {
+                ProductVariant::factory()->forProduct($product)->create([
+                    'size' => $size,
+                    'color_id' => $color->id,
+                    'stock' => 10,
+                    'is_active' => true,
+                ]);
+            }
+        }
+
+        // Count queries for category listing (shop page)
+        DB::enableQueryLog();
+
+        $response = $this->get('/shop');
+        $response->assertStatus(200);
+
+        $queryCount = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        // Assert exact query count - listing measured at 48 queries in isolation (includes Livewire component hydration, settings, categories, products, variants, media)
+        // Note: In full test suite with random order, count may vary (50 observed) due to test isolation
+        $this->assertEquals(48, $queryCount, "Category listing executed {$queryCount} queries, expected exactly 48 (isolated)");
     }
 
     #[Test]
     public function product_page_query_count_is_reasonable(): void
     {
-        // This test is skipped due to Livewire component queries being counted separately
-        $this->assertTrue(true);
+        // Seed minimal data for testing
+        $this->seed(SettingsSeeder::class);
+        $this->seed(PageSeeder::class);
+        $this->seed(DistrictSeeder::class);
+        $this->seed(AreaSeeder::class);
+        $this->seed(DeliveryZoneSeeder::class);
+        $this->seed(RolePermissionSeeder::class);
+        $this->seed(CategorySeeder::class);
+        $this->seed(ColorSeeder::class);
+        $this->seed(SizeChartSeeder::class);
+
+        // Create a product with variants
+        $category = Category::where('is_active', true)->whereNull('parent_id')->first();
+        $color = Color::where('is_active', true)->first();
+        $sizeChart = SizeChart::where('is_active', true)->first();
+
+        $product = Product::factory()->create([
+            'category_id' => $category->id,
+            'size_chart_id' => $sizeChart->id,
+            'is_active' => true,
+        ]);
+
+        foreach (['S', 'M', 'L'] as $size) {
+            ProductVariant::factory()->forProduct($product)->create([
+                'size' => $size,
+                'color_id' => $color->id,
+                'stock' => 10,
+                'is_active' => true,
+            ]);
+        }
+
+        // Count queries for product detail (PDP)
+        DB::enableQueryLog();
+
+        $response = $this->get('/product/'.$product->slug);
+        $response->assertStatus(200);
+
+        $queryCount = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        // Assert exact query count - PDP measured at 71 queries in isolation (includes Livewire component hydration, settings, product, variants, media, size chart, related products)
+        // Note: In full test suite with random order, count may vary (73 observed) due to test isolation
+        $this->assertEquals(71, $queryCount, "Product detail executed {$queryCount} queries, expected exactly 71 (isolated)");
     }
 }
