@@ -7,9 +7,7 @@ namespace App\Livewire\Storefront;
 use App\Models\Category;
 use App\Models\Color;
 use App\Models\Product;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -32,8 +30,6 @@ class ProductFilters extends Component
 
     #[Url(history: true)]
     public string $categorySlug = '';
-
-    public int $perPage = 12;
 
     public function mount(string $categorySlug = ''): void
     {
@@ -85,64 +81,6 @@ class ProductFilters extends Component
         return ! empty($this->sizes) || ! empty($this->colors) || $this->priceMin > 0 || $this->priceMax > 0;
     }
 
-    public function getProductsProperty(): LengthAwarePaginator
-    {
-        $query = Product::query()
-            ->where('is_active', true)
-            ->with(['category', 'variants.color', 'media'])
-            ->when($this->categorySlug, function (Builder $query) {
-                $category = Category::where('slug', $this->categorySlug)->first();
-                if ($category) {
-                    $descendantIds = $category->descendants()->pluck('id')->toArray();
-                    $descendantIds[] = $category->id;
-                    $query->whereIn('category_id', $descendantIds);
-                }
-            })
-            ->when($this->sizes, function (Builder $query) {
-                $query->whereHas('variants', function (Builder $q) {
-                    $q->whereIn('size', $this->sizes)->where('is_active', true);
-                });
-            })
-            ->when($this->colors, function (Builder $query) {
-                $query->whereHas('variants', function (Builder $q) {
-                    $q->whereIn('color_id', $this->colors)->where('is_active', true);
-                });
-            })
-            ->when($this->priceMin > 0, function (Builder $query) {
-                $query->where(function (Builder $q) {
-                    $q->where('price', '>=', $this->priceMin)
-                        ->orWhereHas('variants', function (Builder $vq) {
-                            $vq->where('price', '>=', $this->priceMin);
-                        });
-                });
-            })
-            ->when($this->priceMax > 0, function (Builder $query) {
-                $query->where(function (Builder $q) {
-                    $q->where('price', '<=', $this->priceMax)
-                        ->orWhereHas('variants', function (Builder $vq) {
-                            $vq->where('price', '<=', $this->priceMax);
-                        });
-                });
-            })
-            ->when($this->sort === 'newest', function (Builder $query) {
-                $query->latest('published_at');
-            })
-            ->when($this->sort === 'oldest', function (Builder $query) {
-                $query->oldest('published_at');
-            })
-            ->when($this->sort === 'price_asc', function (Builder $query) {
-                $query->orderBy('price', 'asc');
-            })
-            ->when($this->sort === 'price_desc', function (Builder $query) {
-                $query->orderBy('price', 'desc');
-            })
-            ->when($this->sort === 'popular', function (Builder $query) {
-                $query->orderBy('sold_count', 'desc');
-            });
-
-        return $query->paginate($this->perPage)->withQueryString();
-    }
-
     public function getCategoriesProperty(): Collection
     {
         return Category::where('is_active', true)
@@ -170,8 +108,6 @@ class ProductFilters extends Component
 
     public function render()
     {
-        return view('livewire.storefront.product-filters', [
-            'products' => $this->products,
-        ]);
+        return view('livewire.storefront.product-filters');
     }
 }

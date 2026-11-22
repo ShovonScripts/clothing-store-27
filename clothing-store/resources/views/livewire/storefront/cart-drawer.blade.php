@@ -1,4 +1,4 @@
-<div x-show="isOpen" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-full" x-transition:enter-end="opacity-100 transform translate-x-0" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100 transform translate-x-0" x-transition:leave-end="opacity-0 transform translate-x-full" class="fixed inset-0 z-50 lg:hidden" @click.outside="close()" @cart-drawer-opened.window="isOpen = true">
+<div wire:show="isOpen" wire:transition.enter="transition ease-out duration-300" wire:transition.enter-start="opacity-0 transform translate-x-full" wire:transition.enter-end="opacity-100 transform translate-x-0" wire:transition.leave="transition ease-in duration-200" wire:transition.leave-start="opacity-100 transform translate-x-0" wire:transition.leave-end="opacity-0 transform translate-x-full" class="fixed inset-0 z-50 lg:hidden" @click.outside="close()" @cart-drawer-opened.window="isOpen = true">
     <div class="fixed inset-0 bg-black/50" @click="close()"></div>
 
     <div class="fixed right-0 top-0 h-full w-full max-w-sm bg-white shadow-xl flex flex-col">

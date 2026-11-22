@@ -24,7 +24,7 @@
             <div>
                 <label class="block text-sm font-medium text-gray-900 mb-2">{{ __('Colors') }}</label>
                 <div class="flex flex-wrap gap-2">
-                    @foreach($this->colors as $color)
+                    @foreach($this->getColorsProperty() as $color)
                         <label class="inline-flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" wire:model="colors" value="{{ $color->id }}" class="rounded border-gray-300 text-primary focus:ring-primary">
                             <span class="w-5 h-5 rounded-full border" style="background-color: {{ $color->hex }}"></span>

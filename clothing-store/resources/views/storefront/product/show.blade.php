@@ -203,7 +203,14 @@
 <script>
     document.addEventListener('livewire:init', () => {
         Livewire.on('add-to-cart', (event) => {
-            @this.call('open');
+            // Find the cart drawer component and call open method
+            const cartDrawer = document.querySelector('[wire\\:id]');
+            if (cartDrawer) {
+                const componentId = cartDrawer.getAttribute('wire:id');
+                if (componentId) {
+                    Livewire.find(componentId).call('open');
+                }
+            }
         });
     });
 </script>

@@ -44,8 +44,8 @@
     </div>
 
     @if($hasMultipleImages)
-        <div class="mt-3 overflow-x-auto pb-2" wire:ignore>
-            <div class="flex gap-2 min-w-max" x-data="{ scrollLeft: 0 }">
+        <div class="mt-3 overflow-x-auto pb-2">
+            <div class="flex gap-2 min-w-max">
                 @foreach($images as $index => $image)
                     <button type="button"
                             wire:click="setCurrentImage({{ $index }})"

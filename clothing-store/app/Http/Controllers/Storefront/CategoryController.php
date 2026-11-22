@@ -18,7 +18,9 @@ class CategoryController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('storefront.category.index', compact('rootCategories'));
+        $categorySlug = request()->query('category');
+
+        return view('storefront.shop', compact('rootCategories', 'categorySlug'));
     }
 
     public function categories(): View

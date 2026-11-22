@@ -1,12 +1,6 @@
-<div class="space-y-6" x-data="{
-    selectedColor: {{ $selectedColorId ? $selectedColorId : 'null' }},
-    selectedSize: '{{ $selectedSize }}',
-    quantity: {{ $quantity }},
-    maxStock: {{ $variantPicker->getMaxStock() }},
-    selectedVariantId: {{ $selectedVariantId ? $selectedVariantId : 'null' }},
-}">
+<div class="space-y-6" wire:ignore>
 
-    <div x-show="selectedVariantId" x-transition class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
+    <div wire:loading.class="hidden" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
         {{ __('Variant selected') }} - {{ $product->getDisplayNameAttribute() }}
     </div>
 
@@ -59,7 +53,7 @@
         </div>
     </div>
 
-    <div x-show="selectedVariantId" x-transition class="space-y-4">
+    <div wire:show="selectedVariantId" wire:transition class="space-y-4">
         <div class="flex items-center justify-between">
             <div>
                 <span class="text-lg font-bold text-gray-900">
@@ -75,9 +69,9 @@
 
         <div class="flex items-center gap-4">
             <div class="flex items-center border border-gray-300 rounded-lg">
-                <button type="button" wire:click="decrementQuantity" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary" :disabled="quantity <= 1" aria-label="{{ __('Decrease quantity') }}">-</button>
+                <button type="button" wire:click="decrementQuantity" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary" wire:loading.attr="disabled" aria-label="{{ __('Decrease quantity') }}">-</button>
                 <input type="number" wire:model.defer="quantity" min="1" :max="variantPicker->getSelectedVariantStock()" class="w-16 text-center border-x border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" aria-label="{{ __('Quantity') }}">
-                <button type="button" wire:click="incrementQuantity" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-primary" :disabled="quantity >= maxStock" aria-label="{{ __('Increase quantity') }}">+</button>
+                <button type="button" wire:click="incrementQuantity" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-primary" wire:loading.attr="disabled" aria-label="{{ __('Increase quantity') }}">+</button>
             </div>
 
             <div class="text-sm text-gray-600">
@@ -94,7 +88,7 @@
 
         @if($variantPicker->isOutOfStock())
             <div class="flex items-center gap-2 text-red-600 text-sm">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293-1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
                 <span>{{ __('Out of stock') }}</span>
             </div>
         @endif
@@ -112,7 +106,7 @@
         </button>
     </div>
 
-    <div x-show="!selectedVariantId" x-transition class="text-center py-8 text-gray-500">
+    <div wire:show="!selectedVariantId" wire:transition class="text-center py-8 text-gray-500">
         <p>{{ __('Please select a color and size') }}</p>
     </div>
 

@@ -15,17 +15,16 @@ class ProductFactory extends Factory
 
     public function definition(): array
     {
-        static $counter = 0;
-        $counter++;
+        $uniqueId = uniqid('prod_', true);
 
         return [
             'category_id' => Category::factory(),
-            'name' => 'Product '.$counter,
-            'name_bn' => 'পণ্য '.$counter,
-            'slug' => 'product-'.$counter,
-            'sku' => 'SKU-'.str_pad((string) $counter, 6, '0', STR_PAD_LEFT),
-            'short_description' => 'Short description for product '.$counter,
-            'description' => 'Full description for product '.$counter,
+            'name' => 'Product '.$uniqueId,
+            'name_bn' => 'পণ্য '.$uniqueId,
+            'slug' => 'product-'.$uniqueId,
+            'sku' => 'SKU-'.$uniqueId,
+            'short_description' => 'Short description for product '.$uniqueId,
+            'description' => 'Full description for product '.$uniqueId,
             'fabric' => 'Cotton blend',
             'fit' => 'Regular fit',
             'care' => 'Machine wash cold',
@@ -36,8 +35,8 @@ class ProductFactory extends Factory
             'is_featured' => false,
             'is_new' => false,
             'size_chart_id' => null,
-            'meta_title' => 'Product '.$counter,
-            'meta_description' => 'Meta description for product '.$counter,
+            'meta_title' => 'Product '.$uniqueId,
+            'meta_description' => 'Meta description for product '.$uniqueId,
             'sold_count' => 0,
             'views' => 0,
             'published_at' => now(),
