@@ -41,7 +41,7 @@ class Coupon extends Model
         'is_active' => 'boolean',
     ];
 
-    public function isValidFor(int $subtotal, int $paymentMethod): bool
+    public function isValidFor(int $subtotal, int $paymentMethod, ?string $phone = null): bool
     {
         if (! $this->is_active) {
             return false;
@@ -65,6 +65,15 @@ class Coupon extends Model
 
         if ($this->allowed_payment_methods && ! in_array($paymentMethod, $this->allowed_payment_methods)) {
             return false;
+        }
+
+        if ($this->per_user_limit && $phone) {
+            $userUsage = Order::whereHas('coupon', fn ($q) => $q->where('code', $this->code))
+                ->whereHas('customer', fn ($q) => $q->where('phone', $phone))
+                ->count();
+            if ($userUsage >= $this->per_user_limit) {
+                return false;
+            }
         }
 
         return true;

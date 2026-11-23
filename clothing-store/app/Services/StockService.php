@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exceptions\OutOfStockException;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
 
@@ -11,28 +12,22 @@ class StockService
 {
     public function reserve(array $items): bool
     {
-        try {
-            DB::transaction(function () use ($items) {
-                foreach ($items as $item) {
-                    $variant = ProductVariant::where('id', $item['variant_id'])
-                        ->where('is_active', true)
-                        ->lockForUpdate()
-                        ->firstOrFail();
+        DB::transaction(function () use ($items) {
+            foreach ($items as $item) {
+                $variant = ProductVariant::where('id', $item['variant_id'])
+                    ->where('is_active', true)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-                    if ($variant->stock < $item['qty']) {
-                        throw new \InvalidArgumentException(
-                            "Insufficient stock for variant {$variant->id}. Available: {$variant->stock}, requested: {$item['qty']}"
-                        );
-                    }
-
-                    $variant->decrement('stock', $item['qty']);
+                if ($variant->stock < $item['qty']) {
+                    throw new OutOfStockException($variant, $item['qty']);
                 }
-            });
 
-            return true;
-        } catch (\Exception $e) {
-            throw new \RuntimeException('Stock reservation failed: '.$e->getMessage(), previous: $e);
-        }
+                $variant->decrement('stock', $item['qty']);
+            }
+        });
+
+        return true;
     }
 
     public function release(array $items): void

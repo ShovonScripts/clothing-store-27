@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Actions\PlaceOrderAction;
+use App\Data\CartLineData;
+use App\Data\CheckoutData;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Exceptions\OutOfStockException;
 use App\Models\Area;
 use App\Models\Category;
 use App\Models\Color;
@@ -94,20 +97,19 @@ class PlaceOrderActionTest extends TestCase
         app(SettingsService::class)->getAll();
     }
 
-    protected function getBaseOrderData(): array
+    protected function getBaseOrderData(): CheckoutData
     {
-        $cartItems = [
-            ['variant_id' => $this->variant->id, 'qty' => 2],
-        ];
+        $lines = collect([new CartLineData(variantId: $this->variant->id, qty: 2)]);
 
         $pricing = app(PricingService::class)->calculate(
             $this->district->id,
             $this->area->id,
             '',
-            1 // COD
+            1, // COD
+            $lines
         );
 
-        return [
+        return CheckoutData::fromRequest([
             'name' => 'Test Customer',
             'phone' => '01712345678',
             'email' => 'test@example.com',
@@ -115,18 +117,14 @@ class PlaceOrderActionTest extends TestCase
             'area_id' => $this->area->id,
             'address' => '123 Test Street, Dhaka',
             'payment_method' => 'cod',
-            'bkash_trxid' => null,
-            'bkash_sender' => null,
-            'bkash_amount' => 0,
             'coupon_code' => '',
             'note' => '',
             'total' => $pricing['total'],
-            'cart_items' => $cartItems,
-            'idempotency_token' => Str::random(8),
-        ];
+            'cart_lines' => $lines->toArray(),
+        ], $lines, '127.0.0.1');
     }
 
-    protected function getOutsideDhakaData(): array
+    protected function getOutsideDhakaData(): CheckoutData
     {
         $outsideDistrict = District::where('is_active', true)->where('zone', 'outside_dhaka')->first();
         $outsideArea = Area::where('district_id', $outsideDistrict->id)->first();
@@ -140,18 +138,17 @@ class PlaceOrderActionTest extends TestCase
             ]);
         }
 
-        $cartItems = [
-            ['variant_id' => $this->variant->id, 'qty' => 2],
-        ];
+        $lines = collect([new CartLineData(variantId: $this->variant->id, qty: 2)]);
 
         $pricing = app(PricingService::class)->calculate(
             $outsideDistrict->id,
             $outsideArea->id,
             '',
-            1 // COD
+            1, // COD
+            $lines
         );
 
-        return [
+        return CheckoutData::fromRequest([
             'name' => 'Test Customer',
             'phone' => '01712345678',
             'email' => 'test@example.com',
@@ -159,22 +156,17 @@ class PlaceOrderActionTest extends TestCase
             'area_id' => $outsideArea->id,
             'address' => '123 Test Street, Outside Dhaka',
             'payment_method' => 'cod',
-            'bkash_trxid' => null,
-            'bkash_sender' => null,
-            'bkash_amount' => 0,
             'coupon_code' => '',
             'note' => '',
             'total' => $pricing['total'],
-            'cart_items' => $cartItems,
-            'idempotency_token' => Str::random(8),
-        ];
+            'cart_lines' => $lines->toArray(),
+        ], $lines, '127.0.0.1');
     }
 
     #[Test]
     public function cod_order_creates_order_with_correct_status(): void
     {
-        $data = $this->getBaseOrderData();
-        $data['payment_method'] = 'cod';
+        $data = $this->getBaseOrderData()->withPaymentMethod('cod');
 
         $order = app(PlaceOrderAction::class)->execute($data);
 
@@ -193,11 +185,11 @@ class PlaceOrderActionTest extends TestCase
     #[Test]
     public function bkash_order_creates_order_with_awaiting_verification(): void
     {
-        $data = $this->getBaseOrderData();
-        $data['payment_method'] = 'bkash';
-        $data['bkash_trxid'] = 'ABC1234567';
-        $data['bkash_sender'] = '01711111111';
-        $data['bkash_amount'] = 207000; // Must match total (subtotal + delivery)
+        $data = $this->getBaseOrderData()
+            ->withPaymentMethod('bkash')
+            ->withBkashTrxid('ABC1234567')
+            ->withBkashSender('01711111111')
+            ->withBkashAmount(207000); // Must match total (subtotal + delivery)
 
         $order = app(PlaceOrderAction::class)->execute($data);
 
@@ -210,22 +202,22 @@ class PlaceOrderActionTest extends TestCase
     #[Test]
     public function duplicate_trxid_rejected_case_insensitive(): void
     {
-        $data1 = $this->getBaseOrderData();
-        $data1['payment_method'] = 'bkash';
-        $data1['bkash_trxid'] = 'ABC1234567';
-        $data1['bkash_sender'] = '01711111111';
-        $data1['bkash_amount'] = 207000;
-        $data1['idempotency_token'] = 'token1';
+        $data1 = $this->getBaseOrderData()
+            ->withPaymentMethod('bkash')
+            ->withBkashTrxid('ABC1234567')
+            ->withBkashSender('01711111111')
+            ->withBkashAmount(207000)
+            ->withIdempotencyToken('token1');
 
         $order1 = app(PlaceOrderAction::class)->execute($data1);
 
         // Try duplicate TrxID with different case
-        $data2 = $this->getBaseOrderData();
-        $data2['payment_method'] = 'bkash';
-        $data2['bkash_trxid'] = 'abc1234567'; // lowercase
-        $data2['bkash_sender'] = '01711111111';
-        $data2['bkash_amount'] = 207000;
-        $data2['idempotency_token'] = 'token2';
+        $data2 = $this->getBaseOrderData()
+            ->withPaymentMethod('bkash')
+            ->withBkashTrxid('abc1234567') // lowercase
+            ->withBkashSender('01711111111')
+            ->withBkashAmount(207000)
+            ->withIdempotencyToken('token2');
 
         $this->expectException(\InvalidArgumentException::class);
         app(PlaceOrderAction::class)->execute($data2);
@@ -237,11 +229,11 @@ class PlaceOrderActionTest extends TestCase
     #[Test]
     public function bkash_amount_less_than_total_rejected(): void
     {
-        $data = $this->getBaseOrderData();
-        $data['payment_method'] = 'bkash';
-        $data['bkash_trxid'] = 'ABC1234567';
-        $data['bkash_sender'] = '01711111111';
-        $data['bkash_amount'] = 100000; // Less than total
+        $data = $this->getBaseOrderData()
+            ->withPaymentMethod('bkash')
+            ->withBkashTrxid('ABC1234567')
+            ->withBkashSender('01711111111')
+            ->withBkashAmount(100000); // Less than total
 
         $this->expectException(\InvalidArgumentException::class);
         app(PlaceOrderAction::class)->execute($data);
@@ -254,10 +246,9 @@ class PlaceOrderActionTest extends TestCase
     {
         $this->variant->update(['stock' => 1]);
 
-        $data = $this->getBaseOrderData();
-        $data['payment_method'] = 'cod';
+        $data = $this->getBaseOrderData()->withPaymentMethod('cod');
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(OutOfStockException::class);
         app(PlaceOrderAction::class)->execute($data);
 
         $this->assertEquals(0, Order::count());
@@ -267,8 +258,7 @@ class PlaceOrderActionTest extends TestCase
     public function price_tamper_ignored_client_price(): void
     {
         // The action ignores client prices and uses DB prices
-        $data = $this->getBaseOrderData();
-        $data['payment_method'] = 'cod';
+        $data = $this->getBaseOrderData()->withPaymentMethod('cod');
 
         // Even if we could pass a forged total, the action recomputes from DB
         $order = app(PlaceOrderAction::class)->execute($data);
@@ -287,8 +277,7 @@ class PlaceOrderActionTest extends TestCase
             'blacklist_reason' => 'Fraud',
         ]);
 
-        $data = $this->getBaseOrderData();
-        $data['phone'] = '01712345678'; // Same as blacklisted
+        $data = $this->getBaseOrderData()->withPhone('01712345678'); // Same as blacklisted
 
         $this->expectException(\InvalidArgumentException::class);
         app(PlaceOrderAction::class)->execute($data);
@@ -305,7 +294,7 @@ class PlaceOrderActionTest extends TestCase
         // Create 3 pending orders (default limit)
         for ($i = 0; $i < 3; $i++) {
             Order::create([
-                'order_number' => now()->format('ymd').str_pad($i + 1, 4, '0', STR_PAD_LEFT),
+                'order_number' => now()->format('ymd').str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
                 'customer_id' => $customer->id,
                 'subtotal' => 100000,
                 'delivery_charge' => 7000,
@@ -322,9 +311,7 @@ class PlaceOrderActionTest extends TestCase
             ]);
         }
 
-        $data = $this->getBaseOrderData();
-        $data['phone'] = $phone;
-        $data['idempotency_token'] = 'newtoken';
+        $data = $this->getBaseOrderData()->withPhone($phone)->withIdempotencyToken('newtoken');
 
         $this->expectException(\InvalidArgumentException::class);
         app(PlaceOrderAction::class)->execute($data);
@@ -335,8 +322,7 @@ class PlaceOrderActionTest extends TestCase
     #[Test]
     public function double_submit_same_idempotency_token_creates_one_order(): void
     {
-        $data = $this->getBaseOrderData();
-        $data['idempotency_token'] = 'sometoken123';
+        $data = $this->getBaseOrderData()->withIdempotencyToken('sometoken123');
 
         $order1 = app(PlaceOrderAction::class)->execute($data);
         $order2 = app(PlaceOrderAction::class)->execute($data);
@@ -350,8 +336,7 @@ class PlaceOrderActionTest extends TestCase
     {
         app(SettingsService::class)->set('maintenance_orders_paused', '1');
 
-        $data = $this->getBaseOrderData();
-        $data['payment_method'] = 'cod';
+        $data = $this->getBaseOrderData()->withPaymentMethod('cod');
 
         $this->expectException(\InvalidArgumentException::class);
         app(PlaceOrderAction::class)->execute($data);
@@ -391,8 +376,7 @@ class PlaceOrderActionTest extends TestCase
             'is_active' => true,
         ]);
 
-        $data = $this->getBaseOrderData();
-        $data['coupon_code'] = 'EXPIRED10';
+        $data = $this->getBaseOrderData()->withCouponCode('EXPIRED10');
 
         $this->expectException(\InvalidArgumentException::class);
         app(PlaceOrderAction::class)->execute($data);
@@ -414,8 +398,7 @@ class PlaceOrderActionTest extends TestCase
             'is_active' => true,
         ]);
 
-        $data = $this->getBaseOrderData();
-        $data['coupon_code'] = 'MIN1000';
+        $data = $this->getBaseOrderData()->withCouponCode('MIN1000');
 
         $this->expectException(\InvalidArgumentException::class);
         app(PlaceOrderAction::class)->execute($data);
@@ -437,8 +420,7 @@ class PlaceOrderActionTest extends TestCase
             'is_active' => true,
         ]);
 
-        $data = $this->getBaseOrderData();
-        $data['coupon_code'] = 'LIMIT1';
+        $data = $this->getBaseOrderData()->withCouponCode('LIMIT1');
 
         $this->expectException(\InvalidArgumentException::class);
         app(PlaceOrderAction::class)->execute($data);
@@ -463,19 +445,40 @@ class PlaceOrderActionTest extends TestCase
         Customer::create(['phone' => $phone]);
 
         // First order uses coupon
-        $data1 = $this->getBaseOrderData();
-        $data1['coupon_code'] = 'PERPHONE';
-        $data1['phone'] = $phone;
-        $data1['idempotency_token'] = 'token1';
+        $lines1 = collect([new CartLineData(variantId: $this->variant->id, qty: 2)]);
+        $pricing1 = app(PricingService::class)->calculate(
+            $this->district->id,
+            $this->area->id,
+            'PERPHONE',
+            1,
+            $lines1
+        );
+
+        $data1 = $this->getBaseOrderData()
+            ->withCouponCode('PERPHONE')
+            ->withPhone($phone)
+            ->withIdempotencyToken('token1')
+            ->withCartLines($lines1)
+            ->withTotal($pricing1['total']);
 
         app(PlaceOrderAction::class)->execute($data1);
 
         // Second order with same phone and coupon should fail
-        session(['cart' => [$this->variant->id => 1]]);
-        $data2 = $this->getBaseOrderData();
-        $data2['coupon_code'] = 'PERPHONE';
-        $data2['phone'] = $phone;
-        $data2['idempotency_token'] = 'token2';
+        $lines2 = collect([new CartLineData(variantId: $this->variant->id, qty: 1)]);
+        $pricing2 = app(PricingService::class)->calculate(
+            $this->district->id,
+            $this->area->id,
+            'PERPHONE',
+            1,
+            $lines2
+        );
+
+        $data2 = $this->getBaseOrderData()
+            ->withCouponCode('PERPHONE')
+            ->withPhone($phone)
+            ->withIdempotencyToken('token2')
+            ->withCartLines($lines2)
+            ->withTotal($pricing2['total']);
 
         $this->expectException(\InvalidArgumentException::class);
         app(PlaceOrderAction::class)->execute($data2);
@@ -560,12 +563,10 @@ class PlaceOrderActionTest extends TestCase
         $data = $this->getBaseOrderData();
         $order1 = app(PlaceOrderAction::class)->execute($data);
 
-        $this->assertMatchesRegularExpression('/^\d{6}\d{4}[a-zA-Z0-9]{8}$/', $order1->order_number);
+        $this->assertMatchesRegularExpression('/^\d{6}\d{4}$/', $order1->order_number);
 
         // Create another order - sequence should increment
-        session(['cart' => [$this->variant->id => 1]]);
-        $data2 = $this->getBaseOrderData();
-        $data2['idempotency_token'] = Str::random(8);
+        $data2 = $this->getBaseOrderData()->withIdempotencyToken(Str::random(8));
         $order2 = app(PlaceOrderAction::class)->execute($data2);
 
         $orders = Order::orderBy('id')->get();
@@ -579,8 +580,7 @@ class PlaceOrderActionTest extends TestCase
     #[Test]
     public function delivery_charge_inside_dhaka(): void
     {
-        $data = $this->getBaseOrderData();
-        $data['payment_method'] = 'cod';
+        $data = $this->getBaseOrderData()->withPaymentMethod('cod');
 
         $order = app(PlaceOrderAction::class)->execute($data);
         $this->assertEquals(7000, $order->delivery_charge); // Inside Dhaka = 70 BDT
@@ -589,8 +589,7 @@ class PlaceOrderActionTest extends TestCase
     #[Test]
     public function delivery_charge_outside_dhaka(): void
     {
-        $data = $this->getOutsideDhakaData();
-        $data['payment_method'] = 'cod';
+        $data = $this->getOutsideDhakaData()->withPaymentMethod('cod');
 
         $order = app(PlaceOrderAction::class)->execute($data);
         $this->assertEquals(13000, $order->delivery_charge); // Outside Dhaka = 130 BDT
@@ -603,8 +602,6 @@ class PlaceOrderActionTest extends TestCase
 
         // Order total: 200000 (items) + 7000 (delivery) = 207000 < 500000
         $data = $this->getBaseOrderData();
-        $data['payment_method'] = 'cod';
-        $data['total'] = 207000; // Client total must match server total
         $order1 = app(PlaceOrderAction::class)->execute($data);
         $this->assertEquals(7000, $order1->delivery_charge);
 
@@ -616,19 +613,21 @@ class PlaceOrderActionTest extends TestCase
             'is_active' => true,
         ]);
 
+        $lines = collect([new CartLineData(variantId: $variant2->id, qty: 10)]);
+
         $pricing = app(PricingService::class)->calculate(
             $this->district->id,
             $this->area->id,
             '',
             1,
-            [['variant_id' => $variant2->id, 'qty' => 10]]
+            $lines
         );
 
-        $data2 = $this->getBaseOrderData();
-        $data2['idempotency_token'] = Str::random(8);
-        $data2['payment_method'] = 'cod';
-        $data2['cart_items'] = [['variant_id' => $variant2->id, 'qty' => 10]];
-        $data2['total'] = $pricing['total']; // 1000000 with free delivery
+        $data2 = $this->getBaseOrderData()
+            ->withIdempotencyToken(Str::random(8))
+            ->withPaymentMethod('cod')
+            ->withCartLines($lines)
+            ->withTotal($pricing['total']); // 10 * 100000 = 1000000, free delivery
 
         $order2 = app(PlaceOrderAction::class)->execute($data2);
         $this->assertEquals(0, $order2->delivery_charge);
