@@ -20,6 +20,7 @@ class OrderStatusHistory extends Model
         'to_status',
         'from_payment_status',
         'to_payment_status',
+        'type',
         'changed_by',
         'note',
     ];

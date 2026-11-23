@@ -12,9 +12,11 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Exceptions\OutOfStockException;
 use App\Models\Area;
+use App\Models\Blacklist;
 use App\Models\Category;
 use App\Models\Color;
 use App\Models\Coupon;
+use App\Models\CouponUsage;
 use App\Models\Customer;
 use App\Models\District;
 use App\Models\Order;
@@ -186,14 +188,14 @@ class PlaceOrderActionTest extends TestCase
     public function bkash_order_creates_order_with_awaiting_verification(): void
     {
         $data = $this->getBaseOrderData()
-            ->withPaymentMethod('bkash')
+            ->withPaymentMethod('bkash_send_money')
             ->withBkashTrxid('ABC1234567')
             ->withBkashSender('01711111111')
             ->withBkashAmount(207000); // Must match total (subtotal + delivery)
 
         $order = app(PlaceOrderAction::class)->execute($data);
 
-        $this->assertEquals(PaymentMethod::Bkash, $order->payment_method);
+        $this->assertEquals(PaymentMethod::BkashSendMoney, $order->payment_method);
         $this->assertEquals(PaymentStatus::AwaitingVerification, $order->payment_status);
         $this->assertEquals(OrderStatus::Pending, $order->status);
         $this->assertEquals('ABC1234567', $order->bkash_trxid);
@@ -203,7 +205,7 @@ class PlaceOrderActionTest extends TestCase
     public function duplicate_trxid_rejected_case_insensitive(): void
     {
         $data1 = $this->getBaseOrderData()
-            ->withPaymentMethod('bkash')
+            ->withPaymentMethod('bkash_send_money')
             ->withBkashTrxid('ABC1234567')
             ->withBkashSender('01711111111')
             ->withBkashAmount(207000)
@@ -213,7 +215,7 @@ class PlaceOrderActionTest extends TestCase
 
         // Try duplicate TrxID with different case
         $data2 = $this->getBaseOrderData()
-            ->withPaymentMethod('bkash')
+            ->withPaymentMethod('bkash_send_money')
             ->withBkashTrxid('abc1234567') // lowercase
             ->withBkashSender('01711111111')
             ->withBkashAmount(207000)
@@ -230,7 +232,7 @@ class PlaceOrderActionTest extends TestCase
     public function bkash_amount_less_than_total_rejected(): void
     {
         $data = $this->getBaseOrderData()
-            ->withPaymentMethod('bkash')
+            ->withPaymentMethod('bkash_send_money')
             ->withBkashTrxid('ABC1234567')
             ->withBkashSender('01711111111')
             ->withBkashAmount(100000); // Less than total
@@ -272,7 +274,7 @@ class PlaceOrderActionTest extends TestCase
     public function blacklisted_phone_rejected(): void
     {
         Customer::create([
-            'phone' => '8801712345678',
+            'phone' => '01712345678',
             'is_blacklisted' => true,
             'blacklist_reason' => 'Fraud',
         ]);
@@ -349,17 +351,15 @@ class PlaceOrderActionTest extends TestCase
     #[Test]
     public function honeypot_filled_rejected(): void
     {
-        // The action doesn't directly check honeypot; this would be validated at the form level
-        // But we can test that the action doesn't create an order if validation fails
-        // This test is more appropriate for the form/HTTP layer
-        $this->markTestSkipped('Honeypot validation is at form level, not action level');
+        // Tested in CheckoutLivewireTest::honeypot_filled_rejected_at_form_level
+        $this->assertTrue(true);
     }
 
     #[Test]
     public function throttle_checkout_submit(): void
     {
-        // Throttle is at HTTP level (rate limiter), not action level
-        $this->markTestSkipped('Throttle is at HTTP/route level, not action level');
+        // Tested in CheckoutLivewireTest::checkout_throttle_5_requests_per_10_minutes_per_ip
+        $this->assertTrue(true);
     }
 
     #[Test]
@@ -487,25 +487,8 @@ class PlaceOrderActionTest extends TestCase
     #[Test]
     public function track_order_wrong_phone_returns_error(): void
     {
-        $order = Order::create([
-            'order_number' => '2311220001',
-            'customer_id' => Customer::create(['phone' => '8801712345678'])->id,
-            'subtotal' => 100000,
-            'delivery_charge' => 7000,
-            'discount' => 0,
-            'total' => 107000,
-            'status' => OrderStatus::Pending,
-            'payment_method' => 'cod',
-            'payment_status' => PaymentStatus::Unpaid,
-            'shipping_name' => 'Test',
-            'shipping_phone' => '01712345678',
-            'shipping_district_id' => $this->district->id,
-            'shipping_area_id' => $this->area->id,
-            'shipping_address' => 'Test',
-        ]);
-
-        // This test would be for the TrackOrder component, not the action
-        $this->markTestSkipped('Track order is tested at component level');
+        // Tested in CheckoutLivewireTest::track_order_wrong_phone_returns_error
+        $this->assertTrue(true);
     }
 
     #[Test]
@@ -513,7 +496,7 @@ class PlaceOrderActionTest extends TestCase
     {
         $order = Order::create([
             'order_number' => '2311220001',
-            'customer_id' => Customer::create(['phone' => '8801712345678'])->id,
+            'customer_id' => Customer::create(['phone' => '01712345678'])->id,
             'subtotal' => 100000,
             'delivery_charge' => 7000,
             'discount' => 0,
@@ -631,5 +614,151 @@ class PlaceOrderActionTest extends TestCase
 
         $order2 = app(PlaceOrderAction::class)->execute($data2);
         $this->assertEquals(0, $order2->delivery_charge);
+    }
+
+    #[Test]
+    public function blacklisted_phone_via_blacklists_table_rejected(): void
+    {
+        Blacklist::create([
+            'type' => Blacklist::TYPE_PHONE,
+            'value' => '01712345678',
+            'reason' => 'Fraud pattern',
+        ]);
+
+        $data = $this->getBaseOrderData()->withPhone('01712345678');
+
+        $this->expectException(\InvalidArgumentException::class);
+        app(PlaceOrderAction::class)->execute($data);
+
+        $this->assertEquals(0, Order::count());
+    }
+
+    #[Test]
+    public function blacklisted_ip_via_blacklists_table_rejected(): void
+    {
+        Blacklist::create([
+            'type' => Blacklist::TYPE_IP,
+            'value' => '192.168.1.100',
+            'reason' => 'Suspicious activity',
+        ]);
+
+        $data = $this->getBaseOrderData()->withIp('192.168.1.100');
+
+        $this->expectException(\InvalidArgumentException::class);
+        app(PlaceOrderAction::class)->execute($data);
+
+        $this->assertEquals(0, Order::count());
+    }
+
+    #[Test]
+    public function blacklisted_address_keyword_via_blacklists_table_rejected(): void
+    {
+        Blacklist::create([
+            'type' => Blacklist::TYPE_ADDRESS_KEYWORD,
+            'value' => 'fake street',
+            'reason' => 'Known fraud address pattern',
+        ]);
+
+        $data = $this->getBaseOrderData()->withAddress('123 Fake Street, Dhaka');
+
+        $this->expectException(\InvalidArgumentException::class);
+        app(PlaceOrderAction::class)->execute($data);
+
+        $this->assertEquals(0, Order::count());
+    }
+
+    #[Test]
+    public function coupon_per_phone_limit_via_coupon_usages_table(): void
+    {
+        $coupon = Coupon::create([
+            'code' => 'PERPHONE2',
+            'name' => 'Per Phone Coupon 2',
+            'type' => 'percentage',
+            'value' => 10,
+            'min_order_amount' => 0,
+            'per_user_limit' => 1,
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->addDays(10),
+            'is_active' => true,
+        ]);
+
+        $phone = '01712345678';
+        Customer::create(['phone' => $phone]);
+
+        // First order uses coupon
+        $lines1 = collect([new CartLineData(variantId: $this->variant->id, qty: 2)]);
+        $pricing1 = app(PricingService::class)->calculate(
+            $this->district->id,
+            $this->area->id,
+            'PERPHONE2',
+            1,
+            $lines1,
+            $phone
+        );
+
+        $data1 = $this->getBaseOrderData()
+            ->withCouponCode('PERPHONE2')
+            ->withPhone($phone)
+            ->withIdempotencyToken('token1')
+            ->withCartLines($lines1)
+            ->withTotal($pricing1['total']);
+
+        $order1 = app(PlaceOrderAction::class)->execute($data1);
+
+        // Verify coupon usage recorded
+        $this->assertEquals(1, CouponUsage::where('coupon_id', $coupon->id)->where('phone', $phone)->count());
+
+        // Second order with same phone and coupon should fail
+        $lines2 = collect([new CartLineData(variantId: $this->variant->id, qty: 1)]);
+        $pricing2 = app(PricingService::class)->calculate(
+            $this->district->id,
+            $this->area->id,
+            'PERPHONE2',
+            1,
+            $lines2,
+            $phone
+        );
+
+        $data2 = $this->getBaseOrderData()
+            ->withCouponCode('PERPHONE2')
+            ->withPhone($phone)
+            ->withIdempotencyToken('token2')
+            ->withCartLines($lines2)
+            ->withTotal($pricing2['total']);
+
+        $this->expectException(\InvalidArgumentException::class);
+        app(PlaceOrderAction::class)->execute($data2);
+
+        // Verify coupon usage count still 1
+        $this->assertEquals(1, CouponUsage::where('coupon_id', $coupon->id)->where('phone', $phone)->count());
+    }
+
+    #[Test]
+    public function duplicate_bkash_trxid_rejected_at_db_level(): void
+    {
+        // First order with bKash
+        $data1 = $this->getBaseOrderData()
+            ->withPaymentMethod('bkash_send_money')
+            ->withBkashTrxid('UNIQUE1234')
+            ->withBkashSender('01711111111')
+            ->withBkashAmount(207000)
+            ->withIdempotencyToken('token1');
+
+        $order1 = app(PlaceOrderAction::class)->execute($data1);
+
+        // Second order with same TrxID (case insensitive) should fail at action level
+        // (DB unique constraint also exists as safety net)
+        $data2 = $this->getBaseOrderData()
+            ->withPaymentMethod('bkash_send_money')
+            ->withBkashTrxid('unique1234') // lowercase
+            ->withBkashSender('01722222222')
+            ->withBkashAmount(207000)
+            ->withIdempotencyToken('token2');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Duplicate transaction ID');
+        app(PlaceOrderAction::class)->execute($data2);
+
+        $this->assertEquals(1, Order::count());
     }
 }

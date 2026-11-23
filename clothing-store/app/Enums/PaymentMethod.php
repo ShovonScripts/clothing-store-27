@@ -7,13 +7,13 @@ namespace App\Enums;
 enum PaymentMethod: string
 {
     case Cod = 'cod';
-    case Bkash = 'bkash';
+    case BkashSendMoney = 'bkash_send_money';
 
     public function label(): string
     {
         return match ($this) {
             self::Cod => __('Cash on Delivery'),
-            self::Bkash => __('bKash Send Money'),
+            self::BkashSendMoney => __('bKash Send Money'),
         };
     }
 
@@ -21,20 +21,20 @@ enum PaymentMethod: string
     {
         return match ($this) {
             self::Cod => __('Pay when your order is delivered'),
-            self::Bkash => __('Send money via bKash and enter TrxID'),
+            self::BkashSendMoney => __('Send money via bKash and enter TrxID'),
         };
     }
 
     public function requiresVerification(): bool
     {
-        return $this === self::Bkash;
+        return $this === self::BkashSendMoney;
     }
 
     public function getRawLabel(): string
     {
         return match ($this) {
             self::Cod => 'Cash on Delivery',
-            self::Bkash => 'bKash Send Money',
+            self::BkashSendMoney => 'bKash Send Money',
         };
     }
 }

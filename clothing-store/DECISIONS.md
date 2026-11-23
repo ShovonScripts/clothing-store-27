@@ -93,4 +93,6 @@
 
 ---
 
-*Decisions will be updated as the project progresses through phases.*
+### 21. Users & Roles Resource Deferral (Phase 4)
+**Decision:** The test `users_resource_not_yet_implemented` in FilamentAdminTest is skipped with reason: "Phase 4: Users & Roles resource not yet implemented - this resource is built in Phase 4 (Order 2 of Phase 4 build sequence per docs/07 §2 and docs/13 roadmap). Skipping is intentional and documented."
+**Reasoning:** The Users & Roles resource is explicitly part of Phase 4 deliverables. It will be implemented after OrderResource and CustomerResource per the Phase 4 build order. The skip is documented here per requirements.

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -19,15 +20,23 @@ class Payment extends Model
         'status',
         'bkash_trxid',
         'bkash_sender',
+        'bkash_amount_sent',
+        'bkash_receiver_number',
         'amount',
         'verified_at',
         'verified_by',
         'rejection_reason',
+        'collected_at',
+        'meta',
     ];
 
     protected $casts = [
         'amount' => 'integer',
+        'bkash_amount_sent' => 'integer',
         'verified_at' => 'datetime',
+        'collected_at' => 'datetime',
+        'meta' => 'array',
+        'method' => PaymentMethod::class,
         'status' => PaymentStatus::class,
     ];
 
@@ -41,13 +50,13 @@ class Payment extends Model
         return $this->belongsTo(User::class, 'verified_by');
     }
 
-    public function isPending(): bool
+    public function isAwaitingVerification(): bool
     {
-        return $this->status === PaymentStatus::Unpaid;
+        return $this->status === PaymentStatus::AwaitingVerification;
     }
 
-    public function isVerified(): bool
+    public function isPaid(): bool
     {
-        return $this->status === PaymentStatus::Verified;
+        return $this->status === PaymentStatus::Paid;
     }
 }

@@ -12,10 +12,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Order extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     protected $fillable = [
         'order_number',
@@ -32,17 +34,30 @@ class Order extends Model
         'bkash_amount',
         'shipping_name',
         'shipping_phone',
+        'customer_email',
         'shipping_district_id',
         'shipping_area_id',
         'shipping_address',
+        'delivery_zone_key',
         'note',
         'coupon_id',
         'discount_amount',
-        'items_snapshot',
+        'approved_by',
         'approved_at',
+        'cancelled_by',
+        'cancelled_at',
+        'cancel_reason',
+        'courier',
+        'consignment_id',
+        'tracking_url',
         'shipped_at',
         'delivered_at',
-        'cancelled_at',
+        'cod_amount',
+        'items_snapshot',
+        'ip_address',
+        'user_agent',
+        'source',
+        'admin_note',
     ];
 
     protected $casts = [
@@ -52,6 +67,7 @@ class Order extends Model
         'total' => 'integer',
         'discount_amount' => 'integer',
         'bkash_amount' => 'integer',
+        'cod_amount' => 'integer',
         'items_snapshot' => 'array',
         'approved_at' => 'datetime',
         'shipped_at' => 'datetime',
@@ -82,6 +98,16 @@ class Order extends Model
         return $this->belongsTo(Coupon::class);
     }
 
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
     public function statusHistory(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class)->orderBy('created_at');
@@ -92,6 +118,11 @@ class Order extends Model
         return $this->hasOne(Payment::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
@@ -99,16 +130,26 @@ class Order extends Model
 
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === OrderStatus::Pending;
     }
 
     public function isVerified(): bool
     {
-        return $this->payment_status === 'verified';
+        return $this->payment_status === PaymentStatus::Paid;
     }
 
     public function canBeCancelled(): bool
     {
-        return in_array($this->status, ['pending', 'approved']);
+        return in_array($this->status, [OrderStatus::Pending, OrderStatus::Confirmed, OrderStatus::Processing], true);
+    }
+
+    public function isBkash(): bool
+    {
+        return $this->payment_method === PaymentMethod::BkashSendMoney;
+    }
+
+    public function isCod(): bool
+    {
+        return $this->payment_method === PaymentMethod::Cod;
     }
 }

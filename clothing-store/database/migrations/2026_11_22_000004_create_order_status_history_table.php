@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('from_status')->nullable();
             $table->string('to_status');
             $table->string('from_payment_status')->nullable();
-            $table->string('to_payment_status');
+            $table->string('to_payment_status')->nullable();
+            $table->string('type', 16)->default('order'); // order | payment
             $table->foreignId('changed_by')->nullable()->constrained('users')->onDelete('set null');
             $table->text('note')->nullable();
             $table->timestamps();

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Coupon extends Model
 {
@@ -41,7 +43,12 @@ class Coupon extends Model
         'is_active' => 'boolean',
     ];
 
-    public function isValidFor(int $subtotal, int $paymentMethod, ?string $phone = null): bool
+    public function usages(): HasMany
+    {
+        return $this->hasMany(CouponUsage::class);
+    }
+
+    public function isValidFor(int $subtotal, string|PaymentMethod $paymentMethod = PaymentMethod::Cod, ?string $phone = null): bool
     {
         if (! $this->is_active) {
             return false;
@@ -63,15 +70,17 @@ class Coupon extends Model
             return false;
         }
 
-        if ($this->allowed_payment_methods && ! in_array($paymentMethod, $this->allowed_payment_methods)) {
-            return false;
+        if ($this->allowed_payment_methods) {
+            $method = $paymentMethod instanceof PaymentMethod ? $paymentMethod->value : $paymentMethod;
+            $allowed = array_map('strval', $this->allowed_payment_methods);
+            if (! in_array((string) $method, $allowed, true)) {
+                return false;
+            }
         }
 
         if ($this->per_user_limit && $phone) {
-            $userUsage = Order::whereHas('coupon', fn ($q) => $q->where('code', $this->code))
-                ->whereHas('customer', fn ($q) => $q->where('phone', $phone))
-                ->count();
-            if ($userUsage >= $this->per_user_limit) {
+            $usage = $this->usages()->where('phone', $phone)->count();
+            if ($usage >= $this->per_user_limit) {
                 return false;
             }
         }

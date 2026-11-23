@@ -17,7 +17,6 @@ class DailyCounter extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
         'sequence' => 'integer',
     ];
 }

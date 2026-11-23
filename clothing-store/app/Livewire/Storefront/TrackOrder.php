@@ -23,6 +23,8 @@ class TrackOrder extends Component
 
     public bool $submitted = false;
 
+    public ?string $maskedPhone = null;
+
     public function track(): void
     {
         $this->validate([
@@ -30,61 +32,73 @@ class TrackOrder extends Component
             'phone' => 'required|string|min:11|max:14',
         ]);
 
-        $key = 'track-order:'.$this->orderNumber.':'.$this->phone;
+        $normalizedPhone = PhoneNormalizer::normalize($this->phone);
+        $key = 'track-order:'.$this->orderNumber.':'.$normalizedPhone;
+
         if (RateLimiter::tooManyAttempts($key, 10)) {
-            $this->error = 'Too many attempts. Please wait before trying again.';
+            $this->error = __('Too many attempts. Please wait before trying again.');
 
             return;
         }
 
-        RateLimiter::hit($key, 300); // 5 minutes
-
-        $normalizedPhone = PhoneNormalizer::normalize($this->phone);
+        RateLimiter::hit($key, 300);
 
         $this->order = Order::where('order_number', $this->orderNumber)
-            ->whereHas('customer', fn ($q) => $q->where('phone', $this->phone))
-            ->with(['items.product', 'items.variant', 'statusHistory.changedBy', 'shippingDistrict', 'shippingArea'])
+            ->where(function ($query) use ($normalizedPhone) {
+                $query->where('shipping_phone', $normalizedPhone)
+                    ->orWhereHas('customer', fn ($q) => $q->where('phone', $normalizedPhone));
+            })
+            ->with(['items', 'statusHistory.changedBy', 'shippingDistrict', 'shippingArea', 'payment'])
             ->first();
 
         if (! $this->order) {
-            $this->error = 'Order not found. Please check your order number and phone.';
+            $this->error = __('Order not found. Please check your order number and phone number.');
 
             return;
         }
 
+        $this->maskedPhone = PhoneNormalizer::mask($this->order->shipping_phone);
+
         $this->history = $this->order->statusHistory
             ->map(fn ($h) => [
-                'status' => $h->to_status,
-                'payment_status' => $h->to_payment_status,
+                'status' => $h->to_status?->label(),
+                'status_value' => $h->to_status?->value,
+                'payment_status' => $h->to_payment_status?->label(),
                 'note' => $h->note,
                 'date' => $h->created_at->format('Y-m-d H:i'),
+                'by' => $h->changedBy?->name,
             ])
             ->toArray();
 
         $this->submitted = true;
     }
 
-    public function getStatusBadgeClass(string $status): string
+    public function getStatusBadgeClass(string|object|null $status): string
     {
-        return match ($status) {
-            'pending' => 'bg-yellow-100 text-yellow-800',
-            'approved' => 'bg-blue-100 text-blue-800',
+        $value = $status instanceof \BackedEnum ? $status->value : (string) $status;
+
+        return match ($value) {
+            'pending' => 'bg-amber-100 text-amber-800',
+            'confirmed' => 'bg-blue-100 text-blue-800',
             'processing' => 'bg-indigo-100 text-indigo-800',
-            'shipped' => 'bg-purple-100 text-purple-800',
+            'shipped' => 'bg-violet-100 text-violet-800',
             'delivered' => 'bg-green-100 text-green-800',
             'cancelled' => 'bg-red-100 text-red-800',
-            'returned' => 'bg-gray-100 text-gray-800',
-            'failed' => 'bg-red-100 text-red-800',
+            'returned' => 'bg-orange-100 text-orange-800',
+            'failed_delivery' => 'bg-orange-100 text-orange-800',
             default => 'bg-gray-100 text-gray-800',
         };
     }
 
-    public function getPaymentStatusBadgeClass(string $status): string
+    public function getPaymentStatusBadgeClass(string|object|null $status): string
     {
-        return match ($status) {
+        $value = $status instanceof \BackedEnum ? $status->value : (string) $status;
+
+        return match ($value) {
             'unpaid' => 'bg-gray-100 text-gray-800',
-            'pending_verification' => 'bg-yellow-100 text-yellow-800',
-            'verified' => 'bg-green-100 text-green-800',
+            'awaiting_verification' => 'bg-amber-100 text-amber-800',
+            'paid' => 'bg-green-100 text-green-800',
+            'rejected' => 'bg-red-100 text-red-800',
             'refunded' => 'bg-gray-100 text-gray-800',
             default => 'bg-gray-100 text-gray-800',
         };

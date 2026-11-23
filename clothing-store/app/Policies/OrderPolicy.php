@@ -26,7 +26,7 @@ class OrderPolicy
 
     public function verifyBkash(User $user): bool
     {
-        return $user->can('verify_bkash_payments');
+        return $user->can('payments.verify') || $user->can('verify_bkash_payments');
     }
 
     public function changeStatus(User $user): bool

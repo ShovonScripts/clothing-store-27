@@ -24,7 +24,7 @@
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold text-gray-900">{{ __('Order Details') }}</h2>
                     <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
-                        {{ $order->status }}
+                        {{ $order->status->label() }}
                     </span>
                 </div>
 
@@ -39,12 +39,12 @@
                     </div>
                     <div>
                         <p class="text-gray-500">{{ __('Payment Method') }}</p>
-                        <p class="font-medium text-gray-900">{{ $order->payment_method === 'cod' ? 'Cash on Delivery' : 'bKash' }}</p>
+                        <p class="font-medium text-gray-900">{{ $order->payment_method->label() }}</p>
                     </div>
                     <div>
                         <p class="text-gray-500">{{ __('Payment Status') }}</p>
-                        <span class="px-2 py-1 rounded-full text-xs font-medium {{ $order->payment_status === 'verified' ? 'bg-green-100 text-green-800' : ($order->payment_status === 'pending_verification' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800') }}">
-                            {{ $order->payment_status }}
+                        <span class="px-2 py-1 rounded-full text-xs font-medium {{ $order->payment_status === \App\Enums\PaymentStatus::Paid ? 'bg-green-100 text-green-800' : ($order->payment_status === \App\Enums\PaymentStatus::AwaitingVerification ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800') }}">
+                            {{ $order->payment_status->label() }}
                         </span>
                     </div>
                 </div>

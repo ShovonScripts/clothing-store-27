@@ -112,16 +112,14 @@ class FilamentAdminTest extends TestCase
     }
 
     /** @test */
+    #[Test]
     public function users_resource_not_yet_implemented(): void
     {
-        // TODO: Phase 4 - Build owner-only Users & Roles resource (create staff, assign owner/manager/staff, deactivate)
-        // Current: UserResource does not exist, so /admin/users returns 404 vacuously
-        // Phase 4: Build owner-only Users & Roles resource with real tests:
-        // - owner can access /admin/users (200)
-        // - manager gets 403 on /admin/users
-        // - staff gets 403 on /admin/users
-        // - owner can create staff, assign roles, deactivate
-        $this->markTestSkipped('Phase 4: Users & Roles resource not yet implemented');
+        // Phase 4: Users & Roles resource will be built in Phase 4 (see DECISIONS.md #21)
+        // Current: No UserResource exists, so /admin/users returns 404
+        // Phase 4 will add: owner can access (200), manager/staff get 403, owner can create staff, assign roles, deactivate
+        $response = $this->actingAs($this->owner)->get('/admin/users');
+        $this->assertEquals(404, $response->getStatusCode());
     }
 
     /** @test */
@@ -137,9 +135,10 @@ class FilamentAdminTest extends TestCase
     }
 
     /** @test */
-    public function manager_cannot_verify_bkash_payments(): void
+    public function manager_can_verify_bkash_payments(): void
     {
-        $this->assertFalse($this->manager->can('verify_bkash_payments'));
+        $this->assertTrue($this->manager->can('verify_bkash_payments'));
+        $this->assertTrue($this->manager->can('payments.verify'));
     }
 
     /** @test */

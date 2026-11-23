@@ -44,7 +44,7 @@
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-bold text-gray-900">{{ __('Order Details') }}</h2>
                         <span class="px-3 py-1 rounded-full text-sm font-medium {{ $getStatusBadgeClass($order->status) }}">
-                            {{ $order->status }}
+                            {{ $order->status->label() }}
                         </span>
                     </div>
 
@@ -59,12 +59,12 @@
                         </div>
                         <div>
                             <p class="text-gray-500">{{ __('Payment Method') }}</p>
-                            <p class="font-medium text-gray-900">{{ $order->payment_method === 'cod' ? 'Cash on Delivery' : 'bKash' }}</p>
+                            <p class="font-medium text-gray-900">{{ $order->payment_method->label() }}</p>
                         </div>
                         <div>
                             <p class="text-gray-500">{{ __('Payment Status') }}</p>
                             <span class="px-2 py-1 rounded-full text-xs font-medium {{ $getPaymentStatusBadgeClass($order->payment_status) }}">
-                                {{ $order->payment_status }}
+                                {{ $order->payment_status->label() }}
                             </span>
                         </div>
                     </div>
@@ -73,7 +73,7 @@
                         <h3 class="font-medium text-gray-900 mb-3">{{ __('Shipping Address') }}</h3>
                         <address class="text-sm text-gray-600 not-italic">
                             <p>{{ $order->shipping_name }}</p>
-                            <p>{{ $order->shipping_phone }}</p>
+                            <p>{{ $maskedPhone }}</p>
                             <p>{{ $order->shipping_address }}, {{ $order->shippingArea?->name }}, {{ $order->shippingDistrict?->name }}</p>
                         </address>
                     </div>

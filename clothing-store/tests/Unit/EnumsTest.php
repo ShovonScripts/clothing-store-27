@@ -71,18 +71,18 @@ class EnumsTest extends TestCase
     public function test_payment_method_values(): void
     {
         $this->assertEquals('cod', PaymentMethod::Cod->value);
-        $this->assertEquals('bkash', PaymentMethod::Bkash->value);
+        $this->assertEquals('bkash_send_money', PaymentMethod::BkashSendMoney->value);
     }
 
     public function test_payment_method_requires_verification(): void
     {
         $this->assertFalse(PaymentMethod::Cod->requiresVerification());
-        $this->assertTrue(PaymentMethod::Bkash->requiresVerification());
+        $this->assertTrue(PaymentMethod::BkashSendMoney->requiresVerification());
     }
 
     public function test_payment_method_raw_labels(): void
     {
         $this->assertEquals('Cash on Delivery', PaymentMethod::Cod->getRawLabel());
-        $this->assertEquals('bKash Send Money', PaymentMethod::Bkash->getRawLabel());
+        $this->assertEquals('bKash Send Money', PaymentMethod::BkashSendMoney->getRawLabel());
     }
 }

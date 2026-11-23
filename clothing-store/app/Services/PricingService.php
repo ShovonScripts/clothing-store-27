@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Data\CartLineData;
+use App\Enums\PaymentMethod;
 use App\Models\Coupon;
 use App\Models\ProductVariant;
 
@@ -20,36 +21,34 @@ class PricingService
         int $areaId,
         ?string $couponCode = null,
         int $paymentMethod = 1,
-        ?iterable $cartLines = null
+        ?iterable $cartLines = null,
+        ?string $phone = null,
     ): array {
+        $method = $paymentMethod === 2
+            ? PaymentMethod::BkashSendMoney->value
+            : PaymentMethod::Cod->value;
+
         $lines = $cartLines ?? $this->cartService->get()->map(fn ($item) => new CartLineData(
             variantId: (int) $item['variant_id'],
             qty: (int) $item['qty'],
         ));
 
-        $lines = collect($lines)->map(function (CartLineData $line) {
+        $lines = collect($lines)->mapWithKeys(function (CartLineData $line) {
             $variant = ProductVariant::with('product')->find($line->variantId);
+
             if (! $variant) {
                 throw new \InvalidArgumentException("Variant {$line->variantId} not found");
             }
 
-            return new CartLineData(
-                variantId: $line->variantId,
-                qty: $line->qty,
-            );
-        })->mapWithKeys(function (CartLineData $line) use ($lines) {
-            // Find the original line to get price info
-            $originalLine = $lines->first(fn ($l) => $l->variantId === $line->variantId);
-            $variant = ProductVariant::with('product')->find($line->variantId);
-
-            if (! $variant) {
-                throw new \InvalidArgumentException("Variant {$line->variantId} not found");
+            if (! $variant->is_active || ! $variant->product->is_active) {
+                throw new \InvalidArgumentException("Variant {$line->variantId} is unavailable");
             }
 
             return [$line->variantId => [
                 'variant_id' => $line->variantId,
                 'qty' => $line->qty,
                 'price' => $variant->price ?? $variant->product->price,
+                'product_id' => $variant->product_id,
                 'product_name' => $variant->product->name,
                 'product_slug' => $variant->product->slug,
                 'variant_size' => $variant->size,
@@ -79,14 +78,12 @@ class PricingService
                 })
                 ->first();
 
-            if ($coupon && $coupon->isValidFor($subtotal, 1)) {
+            if ($coupon && $coupon->isValidFor($subtotal, $method, $phone)) {
                 $discount = $coupon->calculateDiscount($subtotal);
             } else {
                 $coupon = null;
             }
         }
-
-        $total = $subtotal + $delivery - $discount;
 
         return [
             'subtotal' => $subtotal,
@@ -101,13 +98,14 @@ class PricingService
             'total' => max(0, $subtotal + $delivery - $discount),
             'breakdown' => [
                 'items' => $lines->map(function ($item) {
-                    $variant = ProductVariant::with('product')->find($item['variant_id']);
-
                     return [
                         'variant_id' => $item['variant_id'],
+                        'product_id' => $item['product_id'],
                         'name' => $item['product_name'],
+                        'product_slug' => $item['product_slug'],
                         'size' => $item['variant_size'],
                         'color' => $item['variant_color'],
+                        'image' => $item['image'],
                         'price' => $item['price'],
                         'qty' => $item['qty'],
                         'line_total' => $item['price'] * $item['qty'],
@@ -117,8 +115,12 @@ class PricingService
         ];
     }
 
-    public function validateCoupon(string $code, int $subtotal, int $paymentMethod): array
+    public function validateCoupon(string $code, int $subtotal, int $paymentMethod, ?string $phone = null): array
     {
+        $method = $paymentMethod === 2
+            ? PaymentMethod::BkashSendMoney->value
+            : PaymentMethod::Cod->value;
+
         $coupon = Coupon::where('code', strtoupper($code))
             ->where('is_active', true)
             ->where('starts_at', '<=', now())
@@ -131,7 +133,7 @@ class PricingService
             return ['valid' => false, 'message' => 'Invalid or expired coupon code'];
         }
 
-        if (! $coupon->isValidFor($subtotal, 1)) {
+        if (! $coupon->isValidFor($subtotal, $method, $phone)) {
             return ['valid' => false, 'message' => 'Coupon not applicable to this order'];
         }
 

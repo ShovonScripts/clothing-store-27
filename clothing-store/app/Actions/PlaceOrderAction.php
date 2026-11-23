@@ -4,24 +4,27 @@ declare(strict_types=1);
 
 namespace App\Actions;
 
-use App\Data\CartLineData;
 use App\Data\CheckoutData;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Events\OrderPlaced;
 use App\Models\Coupon;
+use App\Models\CouponUsage;
 use App\Models\Customer;
-use App\Models\DailyCounter;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
 use App\Models\Payment;
-use App\Models\ProductVariant;
+use App\Services\BlacklistService;
 use App\Services\CartService;
+use App\Services\DeliveryChargeService;
+use App\Services\OrderNumberService;
 use App\Services\PricingService;
 use App\Services\SettingsService;
 use App\Services\StockService;
 use App\Support\PhoneNormalizer;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 class PlaceOrderAction
@@ -29,120 +32,118 @@ class PlaceOrderAction
     public function __construct(
         protected CartService $cartService,
         protected PricingService $pricingService,
-        protected StockService $stockService
+        protected StockService $stockService,
+        protected BlacklistService $blacklistService,
+        protected OrderNumberService $orderNumberService,
     ) {}
 
     public function execute(CheckoutData $data): Order
     {
-        // Validate idempotency token (separate from order number)
         if (! $data->idempotencyToken) {
             throw new \InvalidArgumentException('Idempotency token required');
         }
 
-        // Check for duplicate order with same idempotency token (stored in session token cache)
         $cacheKey = "checkout_idempotency:{$data->idempotencyToken}";
         if (cache()->has($cacheKey)) {
             return cache()->get($cacheKey);
         }
 
-        // Validate cart lines
         if ($data->lines->isEmpty()) {
             throw new \InvalidArgumentException('Cart is empty');
         }
 
-        // Re-validate stock and prices for each line
-        $items = $data->lines->map(function (CartLineData $line) {
-            return [
-                'variant_id' => $line->variantId,
-                'qty' => $line->qty,
-            ];
-        })->toArray();
+        $phone = PhoneNormalizer::normalize($data->phone) ?: $data->phone;
+        $isBkash = in_array($data->paymentMethod, ['bkash', PaymentMethod::BkashSendMoney->value], true);
+        $method = $isBkash ? PaymentMethod::BkashSendMoney : PaymentMethod::Cod;
 
-        $this->stockService->reserve($items);
+        if ($this->blacklistService->isBlocked($phone, $data->ipAddress, $data->address)) {
+            throw new \InvalidArgumentException('Order cannot be processed');
+        }
 
-        return DB::transaction(function () use ($data) {
-            // Create or get customer FIRST
+        if (app(SettingsService::class)->get('maintenance_orders_paused', '0') === '1') {
+            throw new \InvalidArgumentException('Orders are currently paused');
+        }
+
+        $trxid = null;
+        if ($isBkash) {
+            if (! $data->bkashTrxid || ! $data->bkashSender || $data->bkashAmount <= 0) {
+                throw new \InvalidArgumentException('bKash details required');
+            }
+
+            $trxid = strtoupper(preg_replace('/\s+/', '', $data->bkashTrxid) ?? '');
+            if (preg_match('/^[A-Z0-9]{8,12}$/', $trxid) !== 1) {
+                throw new \InvalidArgumentException('Invalid bKash TrxID');
+            }
+
+            if (Payment::where('bkash_trxid', $trxid)->exists() || Order::where('bkash_trxid', $trxid)->exists()) {
+                throw new \InvalidArgumentException('Duplicate transaction ID');
+            }
+        }
+
+        $items = $data->lines->map(fn ($line) => [
+            'variant_id' => $line->variantId,
+            'qty' => $line->qty,
+        ])->all();
+
+        return DB::transaction(function () use ($data, $phone, $method, $isBkash, $trxid, $items, $cacheKey) {
+            $this->stockService->reserve($items);
+
             $customer = Customer::firstOrCreate(
-                ['phone' => $data->phone],
+                ['phone' => $phone],
                 ['name' => $data->name ?? null, 'email' => $data->email ?? null]
             );
 
-            // Check blacklist (normalize both phones for comparison)
-            if ($customer->is_blacklisted && PhoneNormalizer::normalize($customer->phone) === PhoneNormalizer::normalize($data->phone)) {
+            if ($customer->is_blacklisted) {
                 throw new \InvalidArgumentException('Order cannot be processed');
             }
 
-            // Check orders-paused setting
-            if (app(SettingsService::class)->get('maintenance_orders_paused', '0') === '1') {
-                throw new \InvalidArgumentException('Orders are currently paused');
+            // Check blacklists table (phone, IP, address keyword)
+            $ip = $data->ipAddress ?? request()->ip();
+            if ($this->blacklistService->isBlocked($phone, $ip, $data->address)) {
+                throw new \InvalidArgumentException('Order cannot be processed');
             }
 
-            // Check per-phone daily pending limit
-            $maxPending = (int) config('settings.max_pending_orders_per_phone_per_day', 3);
-            $pendingToday = Order::whereHas('customer', fn ($q) => $q->where('phone', $data->phone))
+            $maxPending = (int) app(SettingsService::class)->get('max_pending_orders_per_phone_per_day', 3);
+            $pendingToday = Order::whereHas('customer', fn ($q) => $q->where('phone', $phone))
                 ->whereDate('created_at', now())
-                ->whereIn('status', ['pending', 'approved'])
+                ->whereIn('status', [OrderStatus::Pending, OrderStatus::Confirmed])
                 ->count();
             if ($pendingToday >= $maxPending) {
                 throw new \InvalidArgumentException("Daily order limit reached (max {$maxPending})");
             }
 
-            // Calculate pricing with explicit cart lines
             $pricing = $this->pricingService->calculate(
                 $data->districtId,
                 $data->areaId,
-                $data->couponCode,
-                $data->paymentMethod === 'bkash' ? 2 : 1,
-                $data->lines
+                $data->couponCode ?: null,
+                $isBkash ? 2 : 1,
+                $data->lines,
+                $phone,
             );
 
-            // Verify totals match (price tamper check)
-            $clientTotal = $data->total;
-            if ($clientTotal !== $pricing['total']) {
+            if ($data->total !== $pricing['total']) {
                 throw new \InvalidArgumentException('Price mismatch');
             }
 
-            // Validate bKash amount if applicable
-            if ($data->paymentMethod === 'bkash') {
-                if (! $data->bkashTrxid || ! $data->bkashSender || $data->bkashAmount <= 0) {
-                    throw new \InvalidArgumentException('bKash details required');
-                }
-                if ($data->bkashAmount !== $pricing['total']) {
-                    throw new \InvalidArgumentException('bKash amount must match order total');
-                }
-                // Check for duplicate TrxID (case/space insensitive)
-                $normalizedTrxid = strtoupper(str_replace(' ', '', $data->bkashTrxid));
-                if (Payment::whereRaw("UPPER(REPLACE(bkash_trxid, ' ', '')) = ?", [$normalizedTrxid])->exists()) {
-                    throw new \InvalidArgumentException('Duplicate transaction ID');
-                }
+            $minOrder = (int) app(SettingsService::class)->get('min_order_amount', 0);
+            if ($minOrder > 0 && $pricing['total'] < $minOrder) {
+                throw new \InvalidArgumentException('Order total is below the minimum order amount');
             }
 
-            // Validate coupon if provided
-            if ($data->couponCode) {
-                $coupon = Coupon::where('code', strtoupper($data->couponCode))
-                    ->where('is_active', true)
-                    ->where('starts_at', '<=', now())
-                    ->where(function ($q) {
-                        $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
-                    })
-                    ->first();
+            if ($isBkash && $data->bkashAmount < $pricing['total']) {
+                throw new \InvalidArgumentException('bKash amount must be at least the order total');
+            }
 
-                if (! $coupon || ! $coupon->isValidFor($pricing['subtotal'], $data->paymentMethod === 'bkash' ? 2 : 1, $data->phone)) {
+            if ($data->couponCode) {
+                $coupon = Coupon::where('code', strtoupper($data->couponCode))->first();
+                if (! $coupon || ! $coupon->isValidFor($pricing['subtotal'], $method, $phone)) {
                     throw new \InvalidArgumentException('Invalid or expired coupon code');
                 }
             }
 
-            // Generate order number from daily_counters: YYMMDD + 4-digit sequence
-            $datePrefix = now()->format('ymd');
-            $date = now()->toDateString();
-            // Use raw SQL to atomically get or create the counter and increment
-            DB::statement('INSERT OR IGNORE INTO daily_counters (date, sequence, created_at, updated_at) VALUES (?, 0, datetime("now"), datetime("now"))', [$date]);
-            DB::update('UPDATE daily_counters SET sequence = sequence + 1, updated_at = datetime("now") WHERE date = ?', [$date]);
-            $counter = DailyCounter::where('date', $date)->firstOrFail();
-            $sequence = (int) $counter->sequence;
-            $orderNumber = $datePrefix.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+            $orderNumber = $this->orderNumberService->next();
+            $zone = app(DeliveryChargeService::class)->getZone($data->districtId, $data->areaId);
 
-            // Create order
             $order = Order::create([
                 'order_number' => $orderNumber,
                 'customer_id' => $customer->id,
@@ -151,79 +152,90 @@ class PlaceOrderAction
                 'discount' => $pricing['discount'],
                 'total' => $pricing['total'],
                 'status' => OrderStatus::Pending,
-                'payment_method' => $data->paymentMethod === 'bkash' ? PaymentMethod::Bkash : PaymentMethod::Cod,
-                'payment_status' => $data->paymentMethod === 'bkash' ? PaymentStatus::AwaitingVerification : PaymentStatus::Unpaid,
-                'bkash_trxid' => $data->bkashTrxid,
-                'bkash_sender' => $data->bkashSender,
-                'bkash_amount' => $data->bkashAmount,
+                'payment_method' => $method,
+                'payment_status' => $isBkash ? PaymentStatus::AwaitingVerification : PaymentStatus::Unpaid,
+                'bkash_trxid' => $trxid,
+                'bkash_sender' => $isBkash ? $data->bkashSender : null,
+                'bkash_amount' => $isBkash ? $data->bkashAmount : null,
                 'shipping_name' => $data->name,
-                'shipping_phone' => $data->phone,
+                'shipping_phone' => $phone,
+                'customer_email' => $data->email,
                 'shipping_district_id' => $data->districtId,
                 'shipping_area_id' => $data->areaId,
                 'shipping_address' => $data->address,
-                'note' => $data->note ?? null,
+                'delivery_zone_key' => $zone,
+                'note' => $data->note ?: null,
                 'coupon_id' => $pricing['coupon']['id'] ?? null,
                 'discount_amount' => $pricing['discount'],
+                'cod_amount' => $method === PaymentMethod::Cod ? $pricing['total'] : 0,
                 'items_snapshot' => $pricing['breakdown']['items'],
+                'ip_address' => $data->ipAddress,
+                'user_agent' => request()->userAgent(),
+                'source' => request()->input('utm_source'),
             ]);
 
-            // Create order items from pricing breakdown
             foreach ($pricing['breakdown']['items'] as $item) {
                 OrderItem::create([
                     'order_id' => $order->id,
-                    'product_id' => ProductVariant::find($item['variant_id'])->product_id,
+                    'product_id' => $item['product_id'],
                     'variant_id' => $item['variant_id'],
                     'product_name' => $item['name'],
-                    'product_slug' => ProductVariant::find($item['variant_id'])->product->slug,
+                    'product_slug' => $item['product_slug'],
                     'variant_size' => $item['size'],
                     'variant_color' => $item['color'],
-                    'image' => ProductVariant::find($item['variant_id'])->product->getFirstImageUrl('thumb'),
+                    'image' => $item['image'] ?? '',
                     'price' => $item['price'],
                     'qty' => $item['qty'],
                     'line_total' => $item['line_total'],
                 ]);
             }
 
-            // Apply coupon usage
             if ($pricing['coupon']) {
                 $coupon = Coupon::find($pricing['coupon']['id']);
                 $coupon->increment('used_count');
-            }
-
-            // Create payment record
-            $payment = Payment::create([
-                'order_id' => $order->id,
-                'method' => $data->paymentMethod === 'bkash' ? PaymentMethod::Bkash : PaymentMethod::Cod,
-                'status' => $data->paymentMethod === 'bkash' ? PaymentStatus::AwaitingVerification : PaymentStatus::Unpaid,
-                'bkash_trxid' => $data->bkashTrxid,
-                'bkash_sender' => $data->bkashSender,
-                'amount' => $pricing['total'],
-            ]);
-
-            // Handle bKash data on order
-            if ($data->paymentMethod === 'bkash') {
-                $order->update([
-                    'bkash_trxid' => $data->bkashTrxid,
-                    'bkash_sender' => $data->bkashSender,
-                    'bkash_amount' => $data->bkashAmount,
+                CouponUsage::create([
+                    'coupon_id' => $coupon->id,
+                    'order_id' => $order->id,
+                    'phone' => $phone,
                 ]);
             }
 
-            // Create status history
+            try {
+                Payment::create([
+                    'order_id' => $order->id,
+                    'method' => $method,
+                    'status' => $isBkash ? PaymentStatus::AwaitingVerification : PaymentStatus::Unpaid,
+                    'bkash_trxid' => $trxid,
+                    'bkash_sender' => $isBkash ? $data->bkashSender : null,
+                    'bkash_amount_sent' => $isBkash ? $data->bkashAmount : null,
+                    'bkash_receiver_number' => $isBkash ? app(SettingsService::class)->get('bkash_number') : null,
+                    'amount' => $pricing['total'],
+                ]);
+            } catch (QueryException $e) {
+                throw new \InvalidArgumentException('Duplicate transaction ID');
+            }
+
             OrderStatusHistory::create([
                 'order_id' => $order->id,
                 'from_status' => null,
                 'to_status' => OrderStatus::Pending,
                 'from_payment_status' => null,
-                'to_payment_status' => $data->paymentMethod === 'bkash' ? PaymentStatus::AwaitingVerification : PaymentStatus::Unpaid,
+                'to_payment_status' => $order->payment_status,
+                'type' => 'order',
                 'note' => 'Order placed via checkout',
             ]);
 
-            // Clear cart
+            $customer->increment('total_orders');
+            $customer->update([
+                'pending_orders_today' => $customer->pending_orders_today + 1,
+                'last_order_date' => now()->toDateString(),
+            ]);
+
             $this->cartService->clear();
 
-            // Store idempotency token in cache (10 min TTL)
-            cache()->put("checkout_idempotency:{$data->idempotencyToken}", $order, now()->addMinutes(10));
+            cache()->put($cacheKey, $order, now()->addMinutes(10));
+
+            DB::afterCommit(fn () => event(new OrderPlaced($order)));
 
             return $order;
         });

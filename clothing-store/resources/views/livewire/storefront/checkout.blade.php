@@ -76,6 +76,12 @@
                     </div>
                 </div>
 
+                <!-- Honeypot (hidden from humans) -->
+                <div class="hidden" aria-hidden="true">
+                    <label for="website_url">Website</label>
+                    <input type="text" wire:model="honeypot" id="website_url" tabindex="-1" autocomplete="off">
+                </div>
+
                 <!-- Payment Method -->
                 <div class="bg-white rounded-xl border border-gray-100 p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ __('Payment Method') }} <span class="text-red-500">*</span></h2>
@@ -94,8 +100,8 @@
                             </div>
                         </label>
 
-                        <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors {{ $form['payment_method'] === 'bkash' ? 'border-primary bg-primary/5' : 'border-gray-200' }}">
-                            <input type="radio" wire:model="form.payment_method" value="bkash" class="sr-only peer">
+                        <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors {{ $form['payment_method'] === 'bkash_send_money' ? 'border-primary bg-primary/5' : 'border-gray-200' }}">
+                            <input type="radio" wire:model="form.payment_method" value="bkash_send_money" class="sr-only peer">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
                                     <svg class="w-6 h-6 text-pink-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93z"/></svg>
@@ -114,6 +120,9 @@
                     <div class="bg-pink-50 rounded-xl border border-pink-100 p-6" wire:transition>
                         <h3 class="text-lg font-medium text-pink-800 mb-4">{{ __('bKash Payment Details') }}</h3>
                         <p class="text-sm text-pink-700 mb-4">{{ __('Send money to the number shown, then enter the TrxID and sender number below.') }}</p>
+                        <p class="text-sm font-semibold text-pink-800 mb-4">
+                            {{ __('Store bKash number') }}: <span class="font-mono">{{ settings('bkash_number', '01XXXXXXXXX') }}</span>
+                        </p>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
@@ -141,7 +150,7 @@
                 <div class="bg-white rounded-xl border border-gray-100 p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ __('Coupon Code (Optional)') }}</h2>
 
-                    @if ($pricing['coupon'])
+                    @if ($pricing && $pricing['coupon'])
                         <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                             <div>
                                 <p class="font-medium text-green-800">{{ $pricing['coupon']['name'] }}</p>
@@ -167,7 +176,7 @@
                 <!-- Submit -->
                 <div class="bg-white rounded-xl border border-gray-100 p-6 sticky top-24">
                     <button wire:click="submit" :disabled="processing" class="w-full py-3 px-6 bg-primary text-white rounded-lg font-medium text-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                        @if (processing)
+                        @if ($processing)
                             <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                             {{ __('Processing...') }}
                         @else

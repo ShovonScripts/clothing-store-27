@@ -85,6 +85,8 @@ class PermissionTest extends TestCase
             'view_districts',
             'manage_districts',
             'view_reports',
+            'verify_bkash_payments',
+            'payments.verify',
         ];
 
         foreach ($managerPermissions as $permission) {
@@ -93,7 +95,6 @@ class PermissionTest extends TestCase
 
         // Manager should NOT have these permissions
         $deniedPermissions = [
-            'verify_bkash_payments',
             'view_cost_price',
             'manage_settings',
             'manage_payment_settings',
@@ -164,7 +165,7 @@ class PermissionTest extends TestCase
     public function test_policy_order_verify_bkash(): void
     {
         $this->assertTrue($this->owner->can('verify_bkash_payments'));
-        $this->assertFalse($this->manager->can('verify_bkash_payments'));
+        $this->assertTrue($this->manager->can('verify_bkash_payments'));
         $this->assertFalse($this->staff->can('verify_bkash_payments'));
     }
 

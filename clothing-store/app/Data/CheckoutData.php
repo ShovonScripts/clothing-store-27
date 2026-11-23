@@ -274,4 +274,26 @@ readonly class CheckoutData
             lines: $this->lines,
         );
     }
+
+    public function withAddress(string $address): self
+    {
+        return new self(
+            name: $this->name,
+            phone: $this->phone,
+            email: $this->email,
+            districtId: $this->districtId,
+            areaId: $this->areaId,
+            address: $address,
+            paymentMethod: $this->paymentMethod,
+            bkashTrxid: $this->bkashTrxid,
+            bkashSender: $this->bkashSender,
+            bkashAmount: $this->bkashAmount,
+            couponCode: $this->couponCode,
+            note: $this->note,
+            total: $this->total,
+            idempotencyToken: $this->idempotencyToken,
+            ipAddress: $this->ipAddress,
+            lines: $this->lines,
+        );
+    }
 }
