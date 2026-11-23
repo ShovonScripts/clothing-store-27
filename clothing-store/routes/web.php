@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\DistrictController;
+use App\Http\Controllers\OrderExportController;
 use App\Http\Controllers\Storefront\CategoryController;
 use App\Http\Controllers\Storefront\HomeController;
 use App\Http\Controllers\Storefront\LocaleController;
@@ -12,6 +13,7 @@ use App\Livewire\Storefront\CartPage;
 use App\Livewire\Storefront\Checkout;
 use App\Livewire\Storefront\OrderSuccess;
 use App\Livewire\Storefront\TrackOrder;
+use App\Models\Order;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -44,3 +46,17 @@ Route::get('/robots.txt', [RobotsController::class, 'index'])->name('robots');
 Route::prefix('admin')->middleware(['auth', 'role:owner|manager|staff'])->group(function () {
     // Filament will handle admin routes
 });
+
+// Print routes
+Route::get('/orders/{order}/invoice', function (Order $order) {
+    return view('orders.invoice', compact('order'));
+})->name('orders.invoice')->middleware('role:owner|manager|staff');
+
+Route::get('/orders/{order}/packing-slip', function (Order $order) {
+    return view('orders.packing-slip', compact('order'));
+})->name('orders.packing-slip')->middleware('role:owner|manager|staff');
+
+// CSV Export
+Route::get('/admin/orders/export', [OrderExportController::class, 'csv'])
+    ->name('orders.export.csv')
+    ->middleware('role:owner|manager|staff');

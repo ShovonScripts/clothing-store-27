@@ -113,13 +113,27 @@ class FilamentAdminTest extends TestCase
 
     /** @test */
     #[Test]
-    public function users_resource_not_yet_implemented(): void
+    #[Test]
+    public function users_resource_access_control(): void
     {
-        // Phase 4: Users & Roles resource will be built in Phase 4 (see DECISIONS.md #21)
-        // Current: No UserResource exists, so /admin/users returns 404
-        // Phase 4 will add: owner can access (200), manager/staff get 403, owner can create staff, assign roles, deactivate
+        // Phase 4: Users & Roles resource implemented
+        // Owner can access (200)
         $response = $this->actingAs($this->owner)->get('/admin/users');
-        $this->assertEquals(404, $response->getStatusCode());
+        dump('Owner response: '.$response->getStatusCode());
+        if ($response->getStatusCode() !== 200) {
+            dump($response->getContent());
+        }
+        $this->assertEquals(200, $response->getStatusCode());
+
+        // Manager gets 403
+        $response = $this->actingAs($this->manager)->get('/admin/users');
+        dump('Manager response: '.$response->getStatusCode());
+        $this->assertEquals(403, $response->getStatusCode());
+
+        // Staff gets 403
+        $response = $this->actingAs($this->staff)->get('/admin/users');
+        dump('Staff response: '.$response->getStatusCode());
+        $this->assertEquals(403, $response->getStatusCode());
     }
 
     /** @test */

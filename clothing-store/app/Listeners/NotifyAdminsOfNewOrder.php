@@ -15,6 +15,7 @@ class NotifyAdminsOfNewOrder
         User::query()
             ->where('is_active', true)
             ->permission('view_orders')
+            ->distinct()
             ->each(fn (User $user) => $user->notify(new NewOrderNotification($event->order)));
     }
 }
