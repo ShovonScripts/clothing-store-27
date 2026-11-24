@@ -16,7 +16,6 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SizeChart;
 use App\Models\User;
-use App\Notifications\NewOrderNotification;
 use App\Services\PricingService;
 use App\Services\SettingsService;
 use Database\Seeders\AreaSeeder;
@@ -30,9 +29,7 @@ use Database\Seeders\SettingsSeeder;
 use Database\Seeders\SizeChartSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 use PHPUnit\Framework\Attributes\Test;
-use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class SingleOrderActivityLogTest extends TestCase
@@ -54,8 +51,6 @@ class SingleOrderActivityLogTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $this->seed(SettingsSeeder::class);
         $this->seed(PageSeeder::class);
@@ -98,7 +93,7 @@ class SingleOrderActivityLogTest extends TestCase
         $manager = User::factory()->create()->assignRole('manager');
         $staff = User::factory()->create()->assignRole('staff');
 
-        // Verify the created users have the view_orders permission
+        // Verify our 3 admins have the view_orders permission
         $this->assertTrue($owner->hasPermissionTo('view_orders'));
         $this->assertTrue($manager->hasPermissionTo('view_orders'));
         $this->assertTrue($staff->hasPermissionTo('view_orders'));
@@ -128,10 +123,6 @@ class SingleOrderActivityLogTest extends TestCase
             'cart_lines' => $lines->toArray(),
         ], $lines, '127.0.0.1');
 
-        // Use Notification::fake() to test notifications
-        Notification::fake();
-
-        // Place the order
         $order = app(PlaceOrderAction::class)->execute($data);
 
         // Check activity_log table - should have exactly 1 row for this order
@@ -142,14 +133,14 @@ class SingleOrderActivityLogTest extends TestCase
 
         $this->assertEquals(1, $activityLogCount, 'Exactly one activity log entry should be created for the order');
 
-        // Check notifications - should have exactly 1 notification per admin (3 admins)
-        Notification::assertSentTo(
-            [$owner, $manager, $staff],
-            NewOrderNotification::class,
-            function ($notification, $channels) use ($order) {
-                return $notification->order->id === $order->id;
-            }
-        );
+        // Check notifications - each of the 3 admins created in this test should receive exactly 1 notification
+        // (Other tests may create additional users with view_orders permission, so we only verify our 3 admins)
+        foreach ([$owner, $manager, $staff] as $admin) {
+            $adminNotifications = $admin->notifications()
+                ->whereJsonContains('data->order_id', $order->id)
+                ->count();
+            $this->assertEquals(1, $adminNotifications, "Admin {$admin->name} should receive exactly 1 notification");
+        }
     }
 
     #[Test]
@@ -187,13 +178,8 @@ class SingleOrderActivityLogTest extends TestCase
             'cart_lines' => $lines->toArray(),
         ], $lines, '127.0.0.1');
 
-        // Use Notification::fake() to test notifications
-        Notification::fake();
-
-        // Place the order - the event will be fired via DB::afterCommit
         $order = app(PlaceOrderAction::class)->execute($data);
 
-        // Check activity_log table - should have exactly 1 row for this order
         $activityLogCount = DB::table('activity_log')
             ->where('subject_type', Order::class)
             ->where('subject_id', $order->id)
@@ -201,13 +187,13 @@ class SingleOrderActivityLogTest extends TestCase
 
         $this->assertEquals(1, $activityLogCount, 'Exactly one activity log entry should be created for the order');
 
-        // Check notifications - should have exactly 1 notification per admin (3 admins)
-        Notification::assertSentTo(
-            [$owner, $manager, $staff],
-            NewOrderNotification::class,
-            function ($notification, $channels) use ($order) {
-                return $notification->order->id === $order->id;
-            }
-        );
+        // Check notifications - each of the 3 admins created in this test should receive exactly 1 notification
+        // (Other tests may create additional users with view_orders permission, so we only verify our 3 admins)
+        foreach ([$owner, $manager, $staff] as $admin) {
+            $adminNotifications = $admin->notifications()
+                ->whereJsonContains('data->order_id', $order->id)
+                ->count();
+            $this->assertEquals(1, $adminNotifications, "Admin {$admin->name} should receive exactly 1 notification");
+        }
     }
 }
