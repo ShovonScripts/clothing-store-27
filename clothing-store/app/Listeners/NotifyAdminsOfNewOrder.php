@@ -7,10 +7,13 @@ namespace App\Listeners;
 use App\Events\OrderPlaced;
 use App\Models\User;
 use App\Notifications\NewOrderNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
-class NotifyAdminsOfNewOrder
+class NotifyAdminsOfNewOrder implements ShouldQueue
 {
+    use \Illuminate\Queue\InteractsWithQueue;
+
     public function handle(OrderPlaced $event): void
     {
         Log::info('NotifyAdminsOfNewOrder listener called', ['order_id' => $event->order->id]);

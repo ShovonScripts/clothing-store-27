@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ExpireUnverifiedBkashPayments extends Command
 {
@@ -69,11 +70,22 @@ class ExpireUnverifiedBkashPayments extends Command
         $cancelled = 0;
         $failed = 0;
 
+        $systemUser = User::where('email', 'system@clothing-store.local')->first();
+        if (! $systemUser) {
+            $systemUser = User::create([
+                'name' => 'System',
+                'email' => 'system@clothing-store.local',
+                'password' => bcrypt(Str::random(32)),
+                'is_active' => true,
+            ]);
+            $systemUser->assignRole('owner');
+        }
+
         foreach ($orders as $order) {
             try {
                 app(CancelOrderAction::class)->execute(
                     $order,
-                    auth()->user() ?? User::first(),
+                    $systemUser,
                     'bKash payment expired - not verified within '.$hours.' hours'
                 );
                 $cancelled++;

@@ -514,7 +514,7 @@ class QueryCountTest extends TestCase
         // Settings (cache hits = 0 after warmup)
         // Cart session clear (no query)
         // Additional queries from model events/observers, relationship loading, etc. (17-30)
-        // Expected: 30 (clean state, deterministic)
+        // Expected: 31 (clean state, deterministic - includes users query from sync listener)
         if ($queryCount > 35) {
             // Dump query log for debugging
             $queries = DB::getQueryLog();
@@ -522,7 +522,7 @@ class QueryCountTest extends TestCase
                 dump("Query $i: {$q['query']}");
             }
         }
-        $expected = 30;
+        $expected = 31;
         $state = 'clean';
         $this->assertEquals($expected, $queryCount, "PlaceOrderAction executed {$queryCount} queries, expected {$expected} ({$state} state)");
     }
