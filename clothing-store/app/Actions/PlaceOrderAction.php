@@ -16,6 +16,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
 use App\Models\Payment;
+use App\Services\ActivityLogger;
 use App\Services\BlacklistService;
 use App\Services\CartService;
 use App\Services\DeliveryChargeService;
@@ -35,6 +36,7 @@ class PlaceOrderAction
         protected StockService $stockService,
         protected BlacklistService $blacklistService,
         protected OrderNumberService $orderNumberService,
+        protected ActivityLogger $activityLogger,
     ) {}
 
     public function execute(CheckoutData $data): Order
@@ -223,6 +225,12 @@ class PlaceOrderAction
                 'to_payment_status' => $order->payment_status,
                 'type' => 'order',
                 'note' => 'Order placed via checkout',
+            ]);
+
+            $this->activityLogger->log($order, 'orders', 'Order placed', null, [
+                'order_number' => $order->order_number,
+                'payment_method' => $order->payment_method->value,
+                'total' => $order->total,
             ]);
 
             $customer->increment('total_orders');

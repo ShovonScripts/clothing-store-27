@@ -257,15 +257,17 @@ Screenshots captured at 360px and 1280px for Home, Category/Shop, Product, Searc
 
 ---
 
-### Tasks:
-- [ ] OrderResource with tabs/filters/search
-- [ ] Actions: Approve, Verify & Approve (bKash), Reject, Cancel, Processing, Ship, Delivered, Failed, Returned, Mark COD collected
-- [ ] Stock release/restock logic
-- [ ] Dashboard widgets, nav badges
-- [ ] Customers resource + blacklist
-- [ ] **Users & Roles resource (owner-only): create staff, assign owner/manager/staff, deactivate**
-- [ ] Invoice + packing slip (Bangla)
-- [ ] Scheduled command: expire unverified bKash
+## Phase 4: Admin Order Management ✅ COMPLETED (2026-11-24)
+
+### Tasks Completed:
+- [x] OrderResource with tabs/filters/search
+- [x] Actions: Approve, Verify & Approve (bKash), Reject, Cancel, Processing, Ship, Delivered, Failed, Returned, Mark COD collected
+- [x] Stock release/restock logic
+- [x] Dashboard widgets, nav badges
+- [x] Customers resource + blacklist
+- [x] **Users & Roles resource (owner-only): create staff, assign owner/manager/staff, deactivate**
+- [x] Invoice + packing slip (Bangla)
+- [x] Scheduled command: expire unverified bKash
 
 ### Acceptance:
 - Full lifecycle demo (COD + bKash)
@@ -274,9 +276,9 @@ Screenshots captured at 360px and 1280px for Home, Category/Shop, Product, Searc
 - 360px usable
 
 ### Phase 4 Backlog (moved from vacuous test):
-- [ ] Build owner-only Users & Roles resource (create staff, assign owner/manager/staff, deactivate)
-- [ ] Real tests: manager gets 403 on Users resource, staff gets 403
-- [ ] Remove vacuous "staff cannot access users resource" test (currently passes vacuously because UserResource doesn't exist)
+- [x] Build owner-only Users & Roles resource (create staff, assign owner/manager/staff, deactivate)
+- [x] Real tests: manager gets 403 on Users resource, staff gets 403
+- [x] Remove vacuous "staff cannot access users resource" test (currently passes vacuously because UserResource doesn't exist)
 
 ---
 
