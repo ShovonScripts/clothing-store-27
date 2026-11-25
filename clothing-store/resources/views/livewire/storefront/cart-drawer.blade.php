@@ -4,8 +4,8 @@
 
     <div class="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-xl transition-transform" wire:click="$event.stopPropagation()">
         <div class="flex items-center justify-between p-4 border-b">
-            <h2 class="text-lg font-semibold text-gray-900">{{ __('Cart') }} ({{ $count }})</h2>
-            <button wire:click="close" class="text-gray-400 hover:text-gray-600" aria-label="Close cart">
+            <h2 class="text-lg font-semibold text-gray-900">{{ __('global.cart') }} ({{ $count }})</h2>
+            <button wire:click="close" class="text-gray-400 hover:text-gray-600" aria-label="{{ __('cart.close_cart') }}">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -59,7 +59,7 @@
                             {{ __('View Cart') }}
                         </a>
                         <a href="{{ route('checkout') }}" wire:click="close" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg text-center text-sm font-medium hover:bg-primary/90">
-                            {{ __('Checkout') }}
+                            {{ __('global.checkout') }}
                         </a>
                     </div>
                 </div>

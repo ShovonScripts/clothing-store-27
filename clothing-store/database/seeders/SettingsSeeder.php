@@ -35,6 +35,7 @@ class SettingsSeeder extends Seeder
             ['key' => 'announcement_text', 'value' => '', 'type' => 'string', 'group' => 'marketing'],
             ['key' => 'announcement_enabled', 'value' => '0', 'type' => 'bool', 'group' => 'marketing'],
             ['key' => 'meta_pixel_id', 'value' => '', 'type' => 'string', 'group' => 'marketing'],
+            ['key' => 'pixel_purchase_on', 'value' => 'approved', 'type' => 'string', 'group' => 'marketing'],
             ['key' => 'invoice_footer_note', 'value' => 'Thank you for shopping with us!', 'type' => 'string', 'group' => 'store'],
             ['key' => 'maintenance_orders_paused', 'value' => '0', 'type' => 'bool', 'group' => 'maintenance'],
         ];

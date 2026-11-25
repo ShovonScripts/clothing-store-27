@@ -54,6 +54,6 @@
         </div>
     </div>
 
-    @livewire('storefront.cart-drawer')
+    @livewireLazy('storefront.cart-drawer')
 </div>
 @endsection

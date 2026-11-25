@@ -21,7 +21,7 @@
                 'url' => route('product.show', $product->slug),
                 'priceCurrency' => config('store.currency', 'BDT'),
                 'price' => number_format($product->price / 100, 2, '.', ''),
-                'availability' => $product->activeVariants()->where('stock', '>', 0)->exists() ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                'availability' => $product->variants->where('is_active', true)->where('stock', '>', 0)->isNotEmpty() ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
                 'seller' => [
                     '@type' => 'Organization',
                     'name' => config('store.name', '{BRAND}'),
@@ -195,23 +195,22 @@
         @endif
     </div>
 
-    @livewire('storefront.cart-drawer')
+    @livewireLazy('storefront.cart-drawer')
 </div>
 @endsection
 
 @push('scripts')
-<script>
-    document.addEventListener('livewire:init', () => {
-        Livewire.on('add-to-cart', (event) => {
-            // Find the cart drawer component and call open method
-            const cartDrawer = document.querySelector('[wire\\:id]');
-            if (cartDrawer) {
-                const componentId = cartDrawer.getAttribute('wire:id');
-                if (componentId) {
-                    Livewire.find(componentId).call('open');
-                }
-            }
-        });
-    });
-</script>
+@php
+    $metaPixel = app(\App\Services\MetaPixelService::class);
+    $eventId = \Illuminate\Support\Str::uuid()->toString();
+    View::share('metaPixelEventId', $eventId);
+@endphp
+@if($metaPixel->isEnabled())
+    {!! $metaPixel->getViewContentScript([
+        'id' => $product->id,
+        'name' => $product->getDisplayNameAttribute(),
+        'category' => $product->category?->getDisplayNameAttribute() ?? '',
+        'price' => $product->price,
+    ], $eventId) !!}
+@endif
 @endpush

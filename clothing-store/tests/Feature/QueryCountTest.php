@@ -102,15 +102,15 @@ class QueryCountTest extends TestCase
         $queryCount = count(DB::getQueryLog());
         DB::disableQueryLog();
 
-        // Reasonable query count range: 21-25
+        // Exact target: 11 queries (was 23 before Phase 5; target <= 15)
         // Breakdown:
-        // - 6 core queries (products, categories, variants, colors, media, pagination)
-        // - 3 Livewire mount queries (categories, colors, priceRange)
+        // - 5 ProductFilters mount queries (categories, children, colors, min price, max price)
+        // - 1 products count, 1 products page
+        // - 4 eager loads (category, variants, colors, media)
         // - 0 SettingsService queries (cache hit)
-        // - 12-16 Livewire component hydration/rendering queries
-        // Note: Varies 21-25 in random order due to test isolation
-        $this->assertGreaterThanOrEqual(21, $queryCount, "Category listing executed {$queryCount} queries, expected >= 21");
-        $this->assertLessThanOrEqual(25, $queryCount, "Category listing executed {$queryCount} queries, expected <= 25");
+        // - 0 extra per-card queries (product card reuses eager-loaded variants)
+        dump("Category listing executed {$queryCount} queries");
+        $this->assertSame(11, $queryCount, "Category listing executed {$queryCount} queries, expected exactly 11");
     }
 
     #[Test]
@@ -146,6 +146,9 @@ class QueryCountTest extends TestCase
             ]);
         }
 
+        // Keep related-products deterministic: no other active products in the fixture.
+        Product::where('id', '!=', $product->id)->delete();
+
         // Warm up SettingsService cache to ensure deterministic query counts
         app(SettingsService::class)->getAll();
 
@@ -158,8 +161,8 @@ class QueryCountTest extends TestCase
                         $q->where('parent_id', $product->category?->parent_id);
                     });
             })
-            ->with(['media', 'variants'])
-            ->inRandomOrder()
+            ->with(['media', 'variants.color'])
+            ->orderBy('id')
             ->limit(4)
             ->get();
 
@@ -172,15 +175,15 @@ class QueryCountTest extends TestCase
         $queryCount = count(DB::getQueryLog());
         DB::disableQueryLog();
 
-        // Reasonable query count range: 37-43
+        // Exact target: 8 queries (was 43 before Phase 5; target <= 20)
         // Breakdown:
-        // - 10 core queries (product, category, variants, colors, media, sizeChart, views, related, related media, related variants)
-        // - 3 Livewire mount queries (VariantPicker, ProductGallery, CartDrawer)
+        // - product + category + variants + colors + media + size chart (6)
+        // - views increment (1)
+        // - related products (1)
         // - 0 SettingsService queries (cache hit)
-        // - 24-30 Livewire component hydration/rendering queries
-        // Note: Varies 37-43 in random order due to test isolation and inRandomOrder() on related products
-        $this->assertGreaterThanOrEqual(37, $queryCount, "Product detail executed {$queryCount} queries, expected >= 37");
-        $this->assertLessThanOrEqual(43, $queryCount, "Product detail executed {$queryCount} queries, expected <= 43");
+        // - 0 duplicate variant/colour lookups (VariantPicker reuses loaded relations)
+        dump("Product detail executed {$queryCount} queries");
+        $this->assertSame(8, $queryCount, "Product detail executed {$queryCount} queries, expected exactly 8");
     }
 
     #[Test]
@@ -221,6 +224,9 @@ class QueryCountTest extends TestCase
         // Banners
         Banner::factory()->hero()->create(['is_active' => true]);
 
+        // Warm up SettingsService cache to ensure deterministic query counts
+        app(SettingsService::class)->getAll();
+
         // Count queries for home page
         DB::enableQueryLog();
 
@@ -230,12 +236,15 @@ class QueryCountTest extends TestCase
         $queryCount = count(DB::getQueryLog());
         DB::disableQueryLog();
 
-        // Reasonable query count range: 18-22
+        // Exact target: 11 queries (was 20 before Phase 5; target <= 15)
         // Breakdown:
-        // - 11 core queries (banners, categories x2, featured products + relations, new products + relations)
-        // - 7-11 Livewire component hydration/rendering queries (CartDrawer)
-        $this->assertGreaterThanOrEqual(18, $queryCount, "Home page executed {$queryCount} queries, expected >= 18");
-        $this->assertLessThanOrEqual(22, $queryCount, "Home page executed {$queryCount} queries, expected <= 22");
+        // - 1 banners, 1 categories, 1 active children
+        // - 4 featured products (products + categories + media + variants)
+        // - 4 new products (products + categories + media + variants)
+        // - 0 SettingsService queries (cache hit)
+        // - 0 per-card variant queries (product card reuses eager-loaded variants)
+        dump("Home page executed {$queryCount} queries");
+        $this->assertSame(11, $queryCount, "Home page executed {$queryCount} queries, expected exactly 11");
     }
 
     #[Test]

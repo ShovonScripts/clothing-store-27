@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Actions\PlaceOrderAction;
-use App\Console\Commands\ExpireUnverifiedBkashPayments;
 use App\Data\CartLineData;
 use App\Data\CheckoutData;
 use App\Enums\OrderStatus;
-use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Area;
 use App\Models\Category;
@@ -19,7 +17,6 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SizeChart;
-use App\Models\User;
 use App\Services\PricingService;
 use App\Services\SettingsService;
 use Database\Seeders\AreaSeeder;
@@ -33,7 +30,6 @@ use Database\Seeders\SettingsSeeder;
 use Database\Seeders\SizeChartSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -42,10 +38,15 @@ class ExpireUnverifiedBkashTest extends TestCase
     use RefreshDatabase;
 
     protected District $district;
+
     protected Area $area;
+
     protected Color $color;
+
     protected SizeChart $sizeChart;
+
     protected Product $product;
+
     protected ProductVariant $variant;
 
     protected function setUp(): void
@@ -185,7 +186,7 @@ class ExpireUnverifiedBkashTest extends TestCase
 
         // Run command with 24-hour threshold
         $exitCode = Artisan::call('orders:expire-unverified-bkash', ['--hours' => 24]);
-        
+
         // Debug: output command output
         $output = Artisan::output();
         dump($output);

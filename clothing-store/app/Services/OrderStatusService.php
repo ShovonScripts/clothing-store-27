@@ -11,6 +11,8 @@ use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Str;
 
 class OrderStatusService
 {
@@ -70,7 +72,65 @@ class OrderStatusService
 
             app(ActivityLogger::class)->orderTransition($order, $from, $to, $by, $note);
 
+            // Fire Meta Pixel Purchase event if conditions met
+            $this->maybeFirePurchaseEvent($order, $to);
+
             return $order->refresh();
+        });
+    }
+
+    /**
+     * Fire Meta Pixel Purchase server event if pixel_purchase_on condition matches.
+     */
+    private function maybeFirePurchaseEvent(Order $order, OrderStatus $to): void
+    {
+        $trigger = settings('pixel_purchase_on', 'approved');
+        $shouldFire = false;
+
+        if ($trigger === 'approved' && $to === OrderStatus::Confirmed) {
+            $shouldFire = true;
+        } elseif ($trigger === 'delivered' && $to === OrderStatus::Delivered) {
+            $shouldFire = true;
+        } elseif ($trigger === 'placed') {
+            // Already fired Lead at placement; Purchase on placed not recommended per docs
+            $shouldFire = false;
+        }
+
+        if (! $shouldFire) {
+            return;
+        }
+
+        $metaPixel = app(MetaPixelService::class);
+        if (! $metaPixel->isEnabled()) {
+            return;
+        }
+
+        $lines = $order->items->map(fn ($item) => [
+            'id' => (string) $item->variant_id,
+            'quantity' => $item->qty,
+            'item_price' => $item->price / 100,
+        ])->toArray();
+
+        $eventId = (string) Str::uuid();
+
+        // Queue the server-side event
+        Queue::push(function () use ($order, $lines, $eventId) {
+            $params = [
+                'content_type' => 'product',
+                'content_ids' => array_column($lines, 'id'),
+                'contents' => $lines,
+                'value' => $order->total / 100,
+                'currency' => 'BDT',
+                'num_items' => array_sum(array_column($lines, 'quantity')),
+            ];
+
+            // In production, use Conversions API (server-to-server)
+            // For now, log for debugging; real implementation would call Facebook CAPI
+            logger()->info('Meta Pixel Purchase event', [
+                'order_id' => $order->id,
+                'event_id' => $eventId,
+                'params' => $params,
+            ]);
         });
     }
 

@@ -174,6 +174,15 @@ class PlaceOrderAction
                 'ip_address' => $data->ipAddress,
                 'user_agent' => request()->userAgent(),
                 'source' => request()->input('utm_source'),
+                'utm_source' => session('utm_params.utm_source'),
+                'utm_medium' => session('utm_params.utm_medium'),
+                'utm_campaign' => session('utm_params.utm_campaign'),
+                'utm_term' => session('utm_params.utm_term'),
+                'utm_content' => session('utm_params.utm_content'),
+                'fbclid' => session('utm_params.fbclid'),
+                'gclid' => session('utm_params.gclid'),
+                'landing_page' => session('utm_params.landing_page'),
+                'referrer' => session('utm_params.referrer'),
             ]);
 
             foreach ($pricing['breakdown']['items'] as $item) {

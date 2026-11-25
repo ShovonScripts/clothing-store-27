@@ -277,7 +277,7 @@ class ViewOrder extends ViewRecord
                                 ->schema([
                                     InfolistGrid::make(3)->schema([
                                         TextEntry::make('product_name')
-                                            ->label(__('Product')),
+                                            ->label(__('global.product')),
                                         TextEntry::make('variant_size')
                                             ->label(__('Size'))
                                             ->formatStateUsing(fn ($state) => "Size: {$state}"),

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 
 class ProductController extends Controller
@@ -29,8 +30,8 @@ class ProductController extends Controller
                         $q->where('parent_id', $product->category?->parent_id);
                     });
             })
-            ->with(['media', 'variants'])
-            ->inRandomOrder()
+            ->with(['media', 'variants.color'])
+            ->orderBy('id')
             ->limit(4)
             ->get();
 
@@ -65,6 +66,11 @@ class ProductController extends Controller
 
     public function suggestions(Request $request): JsonResponse
     {
+        if (RateLimiter::tooManyAttempts('search-suggestions', 30)) {
+            return response()->json(['error' => 'Too many requests'], 429);
+        }
+        RateLimiter::hit('search-suggestions');
+
         $query = $request->get('q', '');
 
         if (strlen($query) < 2) {

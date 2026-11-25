@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Actions\CancelOrderAction;
-use App\Actions\MarkDeliveredAction;
+use App\Actions\PlaceOrderAction;
 use App\Actions\ReturnOrderAction;
 use App\Actions\ShipOrderAction;
+use App\Data\CartLineData;
+use App\Data\CheckoutData;
 use App\Enums\OrderStatus;
-use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
+use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Resources\Orders\Tables\OrdersTable;
 use App\Models\Area;
+use App\Models\Blacklist;
 use App\Models\Category;
 use App\Models\Color;
 use App\Models\District;
@@ -20,6 +24,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SizeChart;
 use App\Models\User;
+use App\Services\OrderStatusService;
 use App\Services\PricingService;
 use App\Services\SettingsService;
 use Database\Seeders\AreaSeeder;
@@ -32,7 +37,6 @@ use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\SettingsSeeder;
 use Database\Seeders\SizeChartSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -41,14 +45,23 @@ class OrderActionsAdditionalTest extends TestCase
     use RefreshDatabase;
 
     protected District $district;
+
     protected Area $area;
+
     protected Color $color;
+
     protected SizeChart $sizeChart;
+
     protected Product $product;
+
     protected ProductVariant $variant;
+
     protected User $owner;
+
     protected User $manager;
+
     protected User $staff;
+
     protected User $customer;
 
     protected function setUp(): void
@@ -97,7 +110,7 @@ class OrderActionsAdditionalTest extends TestCase
 
     protected function createOrder(string $paymentMethod, string $status = 'pending', string $paymentStatus = 'unpaid'): Order
     {
-        $lines = collect([new \App\Data\CartLineData(variantId: $this->variant->id, qty: 2)]);
+        $lines = collect([new CartLineData(variantId: $this->variant->id, qty: 2)]);
 
         $pricing = app(PricingService::class)->calculate(
             $this->district->id,
@@ -108,7 +121,7 @@ class OrderActionsAdditionalTest extends TestCase
             '01712345678'
         );
 
-        $data = \App\Data\CheckoutData::fromRequest([
+        $data = CheckoutData::fromRequest([
             'name' => 'Test Customer',
             'phone' => '01712345678',
             'email' => 'test@example.com',
@@ -125,13 +138,13 @@ class OrderActionsAdditionalTest extends TestCase
             'cart_lines' => $lines->toArray(),
         ], $lines, '127.0.0.1');
 
-        $order = app(\App\Actions\PlaceOrderAction::class)->execute($data);
+        $order = app(PlaceOrderAction::class)->execute($data);
 
         if ($status !== 'pending') {
-            $order->status = \App\Enums\OrderStatus::tryFrom($status) ?? $order->status;
+            $order->status = OrderStatus::tryFrom($status) ?? $order->status;
         }
         if ($paymentStatus !== 'unpaid') {
-            $order->payment_status = \App\Enums\PaymentStatus::tryFrom($paymentStatus) ?? $order->payment_status;
+            $order->payment_status = PaymentStatus::tryFrom($paymentStatus) ?? $order->payment_status;
         }
         $order->save();
 
@@ -149,7 +162,7 @@ class OrderActionsAdditionalTest extends TestCase
 
         $restoredStock = $this->variant->fresh()->stock;
         $this->assertEquals(8, $restoredStock, 'Stock should NOT be restored when restock=false');
-        
+
         $order->refresh();
         $this->assertEquals(OrderStatus::Returned, $order->status);
     }
@@ -165,7 +178,7 @@ class OrderActionsAdditionalTest extends TestCase
 
         $restoredStock = $this->variant->fresh()->stock;
         $this->assertEquals(10, $restoredStock, 'Stock SHOULD be restored when restock=true');
-        
+
         $order->refresh();
         $this->assertEquals(OrderStatus::Returned, $order->status);
     }
@@ -181,7 +194,7 @@ class OrderActionsAdditionalTest extends TestCase
 
         $restoredStock = $this->variant->fresh()->stock;
         $this->assertEquals(10, $restoredStock, 'Stock should be restored after cancellation');
-        
+
         $order->refresh();
         $this->assertEquals(OrderStatus::Cancelled, $order->status);
     }
@@ -210,7 +223,7 @@ class OrderActionsAdditionalTest extends TestCase
     public function order_resource_has_no_create_edit_delete(): void
     {
         // Test that OrderResource doesn't have create/edit/delete pages
-        $resource = \App\Filament\Resources\Orders\OrderResource::class;
+        $resource = OrderResource::class;
         $pages = $resource::getPages();
 
         $this->assertArrayHasKey('index', $pages);
@@ -229,19 +242,19 @@ class OrderActionsAdditionalTest extends TestCase
         // Create multiple COD orders in pending status
         $order1 = $this->createOrder('cod', 'pending', 'unpaid');
         $order2 = $this->createOrder('cod', 'pending', 'unpaid');
-        
+
         // Create bKash order in pending
         $bkashOrder = $this->createOrder('bkash_send_money', 'pending', 'awaiting_verification');
 
         // Test that bulk approve only works for COD orders
         // This would be tested via Filament integration, but we can verify the logic
-        $resource = \App\Filament\Resources\Orders\OrderResource::class;
+        $resource = OrderResource::class;
         $pages = $resource::getPages();
-        
+
         // Verify the table configuration only allows specific bulk actions
-        $table = app(\App\Filament\Resources\Orders\Tables\OrdersTable::class);
+        $table = app(OrdersTable::class);
         // The table configuration is tested via the FilamentAdminTest
-        
+
         $this->assertTrue(true, 'Bulk action restrictions verified in FilamentAdminTest');
     }
 
@@ -251,11 +264,11 @@ class OrderActionsAdditionalTest extends TestCase
         // Create a customer via order
         $order = $this->createOrder('cod', 'pending', 'unpaid');
         $customer = $order->customer;
-        
+
         $this->assertNotNull($customer);
 
         // Blacklist the customer by phone
-        $blacklist = \App\Models\Blacklist::create([
+        $blacklist = Blacklist::create([
             'type' => 'phone',
             'value' => $customer->phone,
             'reason' => 'Fraudulent activity',
@@ -263,7 +276,7 @@ class OrderActionsAdditionalTest extends TestCase
         ]);
 
         // Try to place new order with blacklisted phone - should fail
-        $lines = collect([new \App\Data\CartLineData(variantId: $this->variant->id, qty: 1)]);
+        $lines = collect([new CartLineData(variantId: $this->variant->id, qty: 1)]);
         $pricing = app(PricingService::class)->calculate(
             $this->district->id,
             $this->area->id,
@@ -273,7 +286,7 @@ class OrderActionsAdditionalTest extends TestCase
             $customer->phone
         );
 
-        $data = \App\Data\CheckoutData::fromRequest([
+        $data = CheckoutData::fromRequest([
             'name' => 'Blacklisted Customer',
             'phone' => $customer->phone,
             'email' => 'blacklisted@example.com',
@@ -289,13 +302,13 @@ class OrderActionsAdditionalTest extends TestCase
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Order cannot be processed');
-        app(\App\Actions\PlaceOrderAction::class)->execute($data);
+        app(PlaceOrderAction::class)->execute($data);
 
         // Unblacklist
         $blacklist->delete();
 
         // Should be able to order again
-        $newOrder = app(\App\Actions\PlaceOrderAction::class)->execute($data);
+        $newOrder = app(PlaceOrderAction::class)->execute($data);
         $this->assertInstanceOf(Order::class, $newOrder);
     }
 
@@ -305,26 +318,26 @@ class OrderActionsAdditionalTest extends TestCase
         // Note: Spatie role middleware has issues in test environment ("Target class [role] does not exist")
         // This test verifies the routes exist and basic auth requirement
         // Full role-based access control test requires Spatie middleware fix in test environment
-        
+
         $order = $this->createOrder('cod', 'confirmed', 'paid');
-        
+
         // Verify routes exist
         $this->assertNotNull(route('orders.invoice', $order));
         $this->assertNotNull(route('orders.packing-slip', $order));
-        
+
         // Verify routes have the correct middleware (role:owner|manager|staff)
         $invoiceRoute = app('router')->getRoutes()->getByName('orders.invoice');
         $packingSlipRoute = app('router')->getRoutes()->getByName('orders.packing-slip');
-        
+
         $this->assertNotNull($invoiceRoute);
         $this->assertNotNull($packingSlipRoute);
-        
+
         $invoiceMiddleware = $invoiceRoute->gatherMiddleware();
         $packingSlipMiddleware = $packingSlipRoute->gatherMiddleware();
-        
+
         $this->assertContains('role:owner|manager|staff', $invoiceMiddleware);
         $this->assertContains('role:owner|manager|staff', $packingSlipMiddleware);
-        
+
         // Note: Full role-based access control test requires Spatie middleware fix in test environment
         // The routes are protected by 'role:owner|manager|staff' middleware
     }
@@ -348,8 +361,8 @@ class OrderActionsAdditionalTest extends TestCase
     #[Test]
     public function order_status_service_valid_invalid_transition_matrix(): void
     {
-        $service = app(\App\Services\OrderStatusService::class);
-        
+        $service = app(OrderStatusService::class);
+
         // Test valid transitions using string values (from OrderStatus::allowedTransitions())
         $validTransitions = [
             'pending' => ['confirmed', 'cancelled'],

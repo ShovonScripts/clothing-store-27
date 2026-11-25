@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
-@section('title', __('Cart') . ' - ' . config('store.name'))
+@section('title', __('global.cart') . ' - ' . config('store.name'))
 
 @section('content')
 <div class="min-h-screen bg-gray-50">
-    @livewire('storefront.cart-drawer')
+    @livewireLazy('storefront.cart-drawer')
 
     <main class="container mx-auto px-4 py-8">
         <div class="mb-6">
@@ -32,7 +32,7 @@
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b">
                             <tr>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Product') }}</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('global.product') }}</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Size / Color') }}</th>
                                 <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Price') }}</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">{{ __('Quantity') }}</th>

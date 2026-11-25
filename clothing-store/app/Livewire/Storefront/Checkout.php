@@ -121,15 +121,13 @@ class Checkout extends Component
 
     public function submit(): void
     {
-        $throttleKey = 'checkout:'.request()->ip();
-
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+        if (RateLimiter::tooManyAttempts('checkout', 5)) {
             $this->addError('throttle', __('Too many checkout attempts. Please try again later.'));
 
             return;
         }
 
-        RateLimiter::hit($throttleKey, 600);
+        RateLimiter::hit('checkout');
 
         $this->validate([
             'honeypot' => 'prohibited',
@@ -200,6 +198,27 @@ class Checkout extends Component
         $this->processing = true;
         $this->error = null;
 
+        // Fire Meta Pixel InitiateCheckout
+        $eventId = (string) Str::uuid();
+        $this->dispatch('meta-pixel:initiate-checkout', params: [
+            'content_type' => 'product',
+            'content_ids' => $lines->map(fn ($item) => (string) $item['variant_id'])->toArray(),
+            'contents' => $lines->map(fn ($item) => [
+                'id' => (string) $item['variant_id'],
+                'quantity' => $item['qty'],
+                'item_price' => $item['price'] / 100,
+            ])->toArray(),
+            'value' => $pricing['total'] / 100,
+            'currency' => 'BDT',
+            'num_items' => $lines->sum('qty'),
+        ], eventId: $eventId);
+
+        // Fire Meta Pixel AddPaymentInfo
+        $paymentMethod = $this->form['payment_method'] === 'cod' ? 'Cash on Delivery' : 'bKash Send Money';
+        $this->dispatch('meta-pixel:add-payment-info', params: [
+            'payment_method' => $paymentMethod,
+        ], eventId: $eventId);
+
         try {
             $data = CheckoutData::fromRequest([
                 'name' => $this->form['name'],
@@ -220,6 +239,20 @@ class Checkout extends Component
             ], $lines, request()->ip());
 
             $order = app(PlaceOrderAction::class)->execute($data);
+
+            // Fire Meta Pixel Lead event (order placed)
+            $this->dispatch('meta-pixel:lead', params: [
+                'content_type' => 'product',
+                'content_ids' => $lines->map(fn ($item) => (string) $item['variant_id'])->toArray(),
+                'contents' => $lines->map(fn ($item) => [
+                    'id' => (string) $item['variant_id'],
+                    'quantity' => $item['qty'],
+                    'item_price' => $item['price'] / 100,
+                ])->toArray(),
+                'value' => $pricing['total'] / 100,
+                'currency' => 'BDT',
+                'num_items' => $lines->sum('qty'),
+            ], eventId: $eventId);
 
             $this->form['idempotency_token'] = Str::random(8);
             $this->pricing = null;

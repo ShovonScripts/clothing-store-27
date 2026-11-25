@@ -41,7 +41,7 @@ class TrackOrder extends Component
             return;
         }
 
-        RateLimiter::hit($key, 300);
+        RateLimiter::hit($key, 60);
 
         $this->order = Order::where('order_number', $this->orderNumber)
             ->where(function ($query) use ($normalizedPhone) {

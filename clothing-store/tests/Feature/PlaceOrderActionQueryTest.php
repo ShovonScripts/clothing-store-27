@@ -7,9 +7,6 @@ namespace Tests\Feature;
 use App\Actions\PlaceOrderAction;
 use App\Data\CartLineData;
 use App\Data\CheckoutData;
-use App\Enums\OrderStatus;
-use App\Enums\PaymentMethod;
-use App\Enums\PaymentStatus;
 use App\Models\Area;
 use App\Models\Category;
 use App\Models\Color;
@@ -18,8 +15,14 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SizeChart;
+use App\Services\ActivityLogger;
+use App\Services\BlacklistService;
+use App\Services\DailyCounterService;
+use App\Services\OrderNumberService;
+use App\Services\OrderStatusService;
 use App\Services\PricingService;
 use App\Services\SettingsService;
+use App\Services\StockService;
 use Database\Seeders\AreaSeeder;
 use Database\Seeders\CategorySeeder;
 use Database\Seeders\ColorSeeder;
@@ -40,10 +43,15 @@ class PlaceOrderActionQueryTest extends TestCase
     use RefreshDatabase;
 
     protected District $district;
+
     protected Area $area;
+
     protected Color $color;
+
     protected SizeChart $sizeChart;
+
     protected Product $product;
+
     protected ProductVariant $variant;
 
     protected function setUp(): void
@@ -133,12 +141,12 @@ class PlaceOrderActionQueryTest extends TestCase
             $lines,
             '01712345678'
         );
-        app(\App\Services\ActivityLogger::class);
-        app(\App\Services\DailyCounterService::class)->next(now()->toDateString());
-        app(\App\Services\StockService::class);
-        app(\App\Services\BlacklistService::class);
-        app(\App\Services\OrderNumberService::class);
-        app(\App\Services\OrderStatusService::class);
+        app(ActivityLogger::class);
+        app(DailyCounterService::class)->next(now()->toDateString());
+        app(StockService::class);
+        app(BlacklistService::class);
+        app(OrderNumberService::class);
+        app(OrderStatusService::class);
 
         // Warmup run
         $warmupData = CheckoutData::fromRequest([
@@ -178,14 +186,14 @@ class PlaceOrderActionQueryTest extends TestCase
             if (preg_match('/from\s+`(\w+)`/i', $sql, $m) || preg_match('/into\s+`(\w+)`/i', $sql, $m) || preg_match('/update\s+`(\w+)`/i', $sql, $m) || preg_match('/delete from\s+`(\w+)`/i', $sql, $m)) {
                 $table = $m[1];
             }
-            echo "Query " . ($i+1) . " [$table]: " . $sql . "\n";
+            echo 'Query '.($i + 1)." [$table]: ".$sql."\n";
         }
 
-        echo "\nTotal queries (base order, excluding queued notifications): " . count($queries) . "\n";
-        
+        echo "\nTotal queries (base order, excluding queued notifications): ".count($queries)."\n";
+
         // Base order placement is 29 queries (without users query from sync listener when Queue::fake())
         // With Queue::fake(), the queued notification job is captured but not executed
-        $this->assertEquals(29, count($queries), "Expected 29 queries, got " . count($queries));
+        $this->assertEquals(29, count($queries), 'Expected 29 queries, got '.count($queries));
     }
 
     #[Test]
@@ -236,10 +244,15 @@ class PlaceOrderActionQueryTest extends TestCase
             $sql = $q['query'];
             $table = 'unknown';
             $op = 'unknown';
-            if (preg_match('/^\s*select/i', $sql)) $op = 'SELECT';
-            elseif (preg_match('/^\s*insert/i', $sql)) $op = 'INSERT';
-            elseif (preg_match('/^\s*update/i', $sql)) $op = 'UPDATE';
-            elseif (preg_match('/^\s*delete/i', $sql)) $op = 'DELETE';
+            if (preg_match('/^\s*select/i', $sql)) {
+                $op = 'SELECT';
+            } elseif (preg_match('/^\s*insert/i', $sql)) {
+                $op = 'INSERT';
+            } elseif (preg_match('/^\s*update/i', $sql)) {
+                $op = 'UPDATE';
+            } elseif (preg_match('/^\s*delete/i', $sql)) {
+                $op = 'DELETE';
+            }
             if (preg_match('/from\s+`(\w+)`/i', $sql, $m) || preg_match('/into\s+`(\w+)`/i', $sql, $m) || preg_match('/update\s+`(\w+)`/i', $sql, $m) || preg_match('/delete from\s+`(\w+)`/i', $sql, $m)) {
                 $table = $m[1];
             }
@@ -254,11 +267,11 @@ class PlaceOrderActionQueryTest extends TestCase
 
         $total = count($queries);
         echo "\nTotal queries (base + queued notifications): $total\n";
-        
+
         // With sync queue, queued notifications run immediately
         // Base = 29 queries, plus notification inserts for each admin with view_orders permission
         // Total varies based on how many admins exist in the database
         // We only assert the base is 29 (verified in first test)
-        $this->assertGreaterThanOrEqual(29, $total, "Total queries should be at least base count");
+        $this->assertGreaterThanOrEqual(29, $total, 'Total queries should be at least base count');
     }
 }

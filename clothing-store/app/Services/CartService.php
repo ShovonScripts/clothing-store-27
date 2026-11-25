@@ -14,9 +14,25 @@ class CartService
     public function get(): Collection
     {
         $sessionCart = session()->get(self::SESSION_KEY, []);
+        $variantIds = array_keys($sessionCart);
 
-        return collect($sessionCart)->map(function (int $qty, string $variantId) {
-            return $this->revalidateItem($variantId, $qty);
+        if (empty($variantIds)) {
+            return collect();
+        }
+
+        $variants = ProductVariant::with(['product', 'color'])
+            ->whereIn('id', $variantIds)
+            ->where('is_active', true)
+            ->get()
+            ->keyBy('id');
+
+        return collect($sessionCart)->map(function (int $qty, string $variantId) use ($variants) {
+            $variant = $variants->get((int) $variantId);
+            if (! $variant) {
+                return null;
+            }
+
+            return $this->revalidateItemFromLoaded($variant, (int) $qty);
         })->filter()->values();
     }
 
@@ -106,6 +122,11 @@ class CartService
             return null;
         }
 
+        return $this->revalidateItemFromLoaded($variant, $requestedQty);
+    }
+
+    private function revalidateItemFromLoaded(ProductVariant $variant, int $requestedQty): ?array
+    {
         if (! $variant->is_active || ! $variant->product->is_active) {
             return null;
         }
@@ -122,7 +143,7 @@ class CartService
         $price = $variant->price ?? $variant->product->price;
 
         return [
-            'variant_id' => $variantId,
+            'variant_id' => $variant->id,
             'product_id' => $variant->product_id,
             'product_name' => $variant->product->getDisplayNameAttribute(),
             'product_slug' => $variant->product->slug,

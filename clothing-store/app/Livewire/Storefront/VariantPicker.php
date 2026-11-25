@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Livewire\Storefront;
 
-use App\Models\Color;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\CartService;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -22,36 +24,18 @@ class VariantPicker extends Component
 
     public array $availableSizes = [];
 
-    public array $availableColors = [];
-
     public int $selectedColorId = 0;
 
     public string $selectedSize = '';
 
     public function mount(Product $product): void
     {
-        $this->product = $product->load(['variants.color']);
+        $this->product = $product->loadMissing(['variants.color']);
 
-        $this->availableSizes = $this->product->activeVariants()
-            ->where('stock', '>', 0)
-            ->distinct('size')
-            ->pluck('size')
-            ->unique()
-            ->values()
-            ->toArray();
+        $active = $this->activeVariants();
 
-        $this->availableColors = $this->product->activeVariants()
-            ->where('stock', '>', 0)
-            ->with('color')
-            ->get()
-            ->pluck('color')
-            ->unique('id')
-            ->values()
-            ->toArray();
-
-        // Auto-select first available color and size
-        if (! empty($this->availableColors)) {
-            $this->selectedColorId = $this->availableColors[0]['id'];
+        if ($active->isNotEmpty()) {
+            $this->selectedColorId = (int) $active->first()->color_id;
             $this->updateAvailableSizes();
         }
     }
@@ -69,40 +53,42 @@ class VariantPicker extends Component
 
     public function updateAvailableSizes(): void
     {
-        $this->availableSizes = $this->product->activeVariants()
+        $this->availableSizes = $this->activeVariants()
             ->where('color_id', $this->selectedColorId)
-            ->where('stock', '>', 0)
             ->pluck('size')
             ->unique()
             ->values()
             ->toArray();
 
-        // Auto-select first available size
-        if (! empty($this->availableSizes) && empty($this->selectedSize)) {
-            $this->selectedSize = $this->availableSizes[0];
-            $this->updateSelectedVariant();
+        if (empty($this->availableSizes)) {
+            $this->selectedSize = '';
+            $this->selectedVariantId = 0;
+
+            return;
         }
+
+        if ($this->selectedSize === '' || ! in_array($this->selectedSize, $this->availableSizes, true)) {
+            $this->selectedSize = $this->availableSizes[0];
+        }
+
+        $this->updateSelectedVariant();
     }
 
     public function updateSelectedVariant(): void
     {
-        if ($this->selectedColorId && $this->selectedSize) {
-            $variant = ProductVariant::where('product_id', $this->product->id)
-                ->where('color_id', $this->selectedColorId)
-                ->where('size', $this->selectedSize)
-                ->where('is_active', true)
-                ->first();
+        $variant = $this->product->variants->first(function (ProductVariant $variant): bool {
+            return $variant->is_active
+                && (int) $variant->color_id === $this->selectedColorId
+                && $variant->size === $this->selectedSize
+                && $variant->stock > 0;
+        });
 
-            $this->selectedVariantId = $variant?->id ?? 0;
-        } else {
-            $this->selectedVariantId = 0;
-        }
+        $this->selectedVariantId = $variant?->id ?? 0;
     }
 
     public function incrementQuantity(): void
     {
-        $maxStock = $this->getMaxStock();
-        if ($this->quantity < $maxStock) {
+        if ($this->quantity < $this->getMaxStock()) {
             $this->quantity++;
         }
     }
@@ -116,32 +102,19 @@ class VariantPicker extends Component
 
     public function getMaxStock(): int
     {
-        if ($this->selectedVariantId) {
-            $variant = ProductVariant::find($this->selectedVariantId);
-
-            return $variant?->stock ?? 0;
-        }
-
-        return $this->product->activeVariants()->sum('stock');
+        return $this->selectedVariant()?->stock ?? 0;
     }
 
     public function getSelectedVariantStock(): int
     {
-        if ($this->selectedVariantId) {
-            $variant = ProductVariant::find($this->selectedVariantId);
-
-            return $variant?->stock ?? 0;
-        }
-
-        return 0;
+        return $this->selectedVariant()?->stock ?? 0;
     }
 
     public function isLowStock(): bool
     {
         $stock = $this->getSelectedVariantStock();
-        $threshold = 5; // Default low stock threshold
 
-        return $stock > 0 && $stock <= $threshold;
+        return $stock > 0 && $stock <= 5;
     }
 
     public function isOutOfStock(): bool
@@ -151,21 +124,66 @@ class VariantPicker extends Component
 
     public function getSelectedVariantPrice(): int
     {
-        if ($this->selectedVariantId) {
-            $variant = ProductVariant::find($this->selectedVariantId);
+        $variant = $this->selectedVariant();
 
-            return $variant?->getEffectivePrice() ?? 0;
-        }
-
-        return $this->product->price;
+        return $variant ? (int) ($variant->price ?? $this->product->price) : (int) $this->product->price;
     }
 
     public function addToCart(): void
     {
-        if ($this->selectedVariantId && $this->quantity > 0) {
-            $this->dispatch('add-to-cart', variantId: $this->selectedVariantId, quantity: $this->quantity);
-            $this->dispatch('notify', message: __('Added to cart'), type: 'success');
+        if (! $this->selectedVariantId || $this->quantity < 1) {
+            return;
         }
+
+        try {
+            app(CartService::class)->add($this->selectedVariantId, $this->quantity);
+            $this->dispatch('cart-updated');
+            $this->dispatch('cart-count-changed', count: app(CartService::class)->count());
+            $this->dispatch('open-cart');
+            $this->dispatch('notify', message: __('messages.added_to_cart'), type: 'success');
+
+            // Fire Meta Pixel AddToCart event
+            $variant = $this->selectedVariant();
+            if ($variant) {
+                $eventId = (string) Str::uuid();
+                $this->dispatch('meta-pixel:add-to-cart', params: [
+                    'content_type' => 'product',
+                    'content_ids' => [(string) $this->product->id],
+                    'content_name' => $this->product->getDisplayNameAttribute(),
+                    'content_category' => $this->product->category?->getDisplayNameAttribute() ?? '',
+                    'value' => (($variant->price ?? $this->product->price) * $this->quantity) / 100,
+                    'currency' => 'BDT',
+                ], eventId: $eventId);
+            }
+        } catch (\InvalidArgumentException $e) {
+            $this->dispatch('notify', message: $e->getMessage(), type: 'error');
+        }
+    }
+
+    public function availableColorOptions(): Collection
+    {
+        return $this->activeVariants()
+            ->pluck('color')
+            ->filter()
+            ->unique('id')
+            ->values();
+    }
+
+    public function sizeAvailable(string $size): bool
+    {
+        return $this->activeVariants()
+            ->where('color_id', $this->selectedColorId)
+            ->where('size', $size)
+            ->isNotEmpty();
+    }
+
+    public function sizeLowStock(string $size): bool
+    {
+        return $this->activeVariants()
+            ->where('color_id', $this->selectedColorId)
+            ->where('size', $size)
+            ->where('stock', '<=', 5)
+            ->isNotEmpty();
     }
 
     public function render()
@@ -174,5 +192,22 @@ class VariantPicker extends Component
             'product' => $this->product,
             'variantPicker' => $this,
         ]);
+    }
+
+    private function activeVariants(): Collection
+    {
+        return $this->product->variants
+            ->where('is_active', true)
+            ->where('stock', '>', 0)
+            ->values();
+    }
+
+    private function selectedVariant(): ?ProductVariant
+    {
+        if (! $this->selectedVariantId) {
+            return null;
+        }
+
+        return $this->product->variants->firstWhere('id', $this->selectedVariantId);
     }
 }

@@ -1,11 +1,12 @@
 <header class="bg-white border-b border-gray-100 sticky top-0 z-40">
+    @php($cartCount = app(\App\Services\CartService::class)->count())
     <div class="container mx-auto px-4">
         <div class="flex items-center justify-between h-16 lg:h-14">
             <div class="flex items-center gap-4">
                 <button 
                     @click="$dispatch('toggle-mobile-menu')" 
                     class="lg:hidden p-2 text-gray-600 hover:text-gray-900"
-                    aria-label="Toggle menu"
+                    aria-label="{{ __('global.toggle_menu') }}"
                     aria-expanded="false"
                 >
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,35 +37,36 @@
                     <button 
                         @click="switchLocale('bn')" 
                         :class="['px-2 py-1 text-xs font-medium rounded', locale === 'bn' ? 'bg-primary text-white' : 'text-gray-600 hover:text-gray-900']"
-                    >
-                        বাংলা
+                        aria-label="{{ __('global.bengali') }}">
+                        {{ __('global.bengali') }}
                     </button>
                     <button 
                         @click="switchLocale('en')" 
                         :class="['px-2 py-1 text-xs font-medium rounded', locale === 'en' ? 'bg-primary text-white' : 'text-gray-600 hover:text-gray-900']"
-                    >
-                        EN
+                        aria-label="{{ __('global.english') }}">
+                        {{ __('global.english') }}
                     </button>
                 </div>
 
-                <button @click="$dispatch('open-cart')" class="relative p-2 text-gray-600 hover:text-gray-900" aria-label="{{ __('Cart') }}">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <a href="{{ route('cart.page') }}" class="relative p-2 text-gray-600 hover:text-gray-900" aria-label="{{ __('global.cart') }}">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a2 2 0 00-2-2H6a2 2 0 00-2 2v4m8 0a2 2 0 012 2v4m0 0H6m10 0l-2 2h-8a2 2 0 01-2-2V7a2 2 0 012-2h8a2 2 0 012 2v4m0 0l2 2" />
                     </svg>
-                </button>
+                    <span id="cart-count" aria-live="polite" class="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center {{ $cartCount > 0 ? '' : 'hidden' }}">{{ $cartCount }}</span>
+                </a>
 
                 <div class="sm:hidden flex items-center gap-2">
                     <button 
                         @click="switchLocale('bn')" 
                         :class="['px-2 py-1 text-xs font-medium rounded', locale === 'bn' ? 'bg-primary text-white' : 'text-gray-600 hover:text-gray-900']"
-                    >
-                        বাংলা
+                        aria-label="{{ __('global.bengali') }}">
+                        {{ __('global.bengali') }}
                     </button>
                     <button 
                         @click="switchLocale('en')" 
                         :class="['px-2 py-1 text-xs font-medium rounded', locale === 'en' ? 'bg-primary text-white' : 'text-gray-600 hover:text-gray-900']"
-                    >
-                        EN
+                        aria-label="{{ __('global.english') }}">
+                        {{ __('global.english') }}
                     </button>
                 </div>
             </div>

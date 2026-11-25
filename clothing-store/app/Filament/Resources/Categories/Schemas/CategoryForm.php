@@ -46,7 +46,11 @@ class CategoryForm
                             ->image()
                             ->directory('categories')
                             ->imagePreviewHeight('150')
-                            ->maxSize(5120),
+                            ->maxSize(5120)
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                            ->imageResizeTargetWidth('800')
+                            ->imageResizeTargetHeight('600')
+                            ->imageResizeMode('cover'),
                     ])->columns(2),
 
                 Section::make(__('Display Settings'))

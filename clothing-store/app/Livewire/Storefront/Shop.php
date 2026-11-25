@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Livewire\Storefront;
 
 use App\Models\Category;
-use App\Models\Color;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -38,30 +36,9 @@ class Shop extends Component
 
     public int $perPage = 12;
 
-    protected Collection $categories;
-
-    protected Collection $colorsList;
-
-    protected array $priceRange;
-
     public function mount(string $categorySlug = ''): void
     {
         $this->categorySlug = $categorySlug;
-
-        $this->categories = Category::where('is_active', true)
-            ->whereNull('parent_id')
-            ->with('activeChildren')
-            ->orderBy('sort_order')
-            ->get();
-
-        $this->colorsList = Color::where('is_active', true)->orderBy('sort_order')->get();
-
-        $min = Product::where('is_active', true)->min('price') ?? 0;
-        $max = Product::where('is_active', true)->max('price') ?? 10000;
-        $this->priceRange = [
-            'min' => (int) floor($min / 100) * 100,
-            'max' => (int) ceil($max / 100) * 100,
-        ];
     }
 
     public function updatingSizes(): void
@@ -165,21 +142,6 @@ class Shop extends Component
             });
 
         return $query->paginate($this->perPage)->withQueryString();
-    }
-
-    public function getCategoriesProperty(): Collection
-    {
-        return $this->categories;
-    }
-
-    public function getColorsProperty(): Collection
-    {
-        return $this->colorsList;
-    }
-
-    public function getPriceRangeProperty(): array
-    {
-        return $this->priceRange;
     }
 
     public function render()

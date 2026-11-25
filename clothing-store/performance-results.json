@@ -1,0 +1,148 @@
+[
+  {
+    "name": "Home",
+    "url": "http://127.0.0.1:8123/",
+    "entries": [
+      {
+        "name": "http://127.0.0.1:8123/build/assets/alpine-BTHDwFKO.js",
+        "transferSize": 54704,
+        "encodedBodySize": 54404,
+        "decodedBodySize": 54404,
+        "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
+        "transferSize": 26389,
+        "encodedBodySize": 26089,
+        "decodedBodySize": 26089,
+        "initiatorType": "other"
+      }
+    ],
+    "consoleMessages": [],
+    "alpineInitCount": 1
+  },
+  {
+    "name": "Shop",
+    "url": "http://127.0.0.1:8123/shop",
+    "entries": [
+      {
+        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
+        "transferSize": 26389,
+        "encodedBodySize": 26089,
+        "decodedBodySize": 26089,
+        "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/build/assets/app-29BXfh2o.js",
+        "transferSize": 58039,
+        "encodedBodySize": 57739,
+        "decodedBodySize": 57739,
+        "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/livewire-d3b1056d/livewire.js?id=102cd394",
+        "transferSize": 610395,
+        "encodedBodySize": 610095,
+        "decodedBodySize": 610095,
+        "initiatorType": "script"
+      }
+    ],
+    "consoleMessages": [],
+    "alpineInitCount": 1
+  },
+  {
+    "name": "Product",
+    "url": "http://127.0.0.1:8123/product/classic-cotton-crew-neck-t-shirt",
+    "entries": [
+      {
+        "name": "http://127.0.0.1:8123/build/assets/app-29BXfh2o.js",
+        "transferSize": 58039,
+        "encodedBodySize": 57739,
+        "decodedBodySize": 57739,
+        "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
+        "transferSize": 26389,
+        "encodedBodySize": 26089,
+        "decodedBodySize": 26089,
+        "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/livewire-d3b1056d/livewire.js?id=102cd394",
+        "transferSize": 610395,
+        "encodedBodySize": 610095,
+        "decodedBodySize": 610095,
+        "initiatorType": "script"
+      }
+    ],
+    "consoleMessages": [],
+    "alpineInitCount": 1
+  },
+  {
+    "name": "Search",
+    "url": "http://127.0.0.1:8123/search?q=shirt",
+    "entries": [
+      {
+        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
+        "transferSize": 26389,
+        "encodedBodySize": 26089,
+        "decodedBodySize": 26089,
+        "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/build/assets/alpine-BTHDwFKO.js",
+        "transferSize": 54704,
+        "encodedBodySize": 54404,
+        "decodedBodySize": 54404,
+        "initiatorType": "other"
+      }
+    ],
+    "consoleMessages": [],
+    "alpineInitCount": 1
+  },
+  {
+    "name": "Categories",
+    "url": "http://127.0.0.1:8123/categories",
+    "entries": [
+      {
+        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
+        "transferSize": 26389,
+        "encodedBodySize": 26089,
+        "decodedBodySize": 26089,
+        "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/build/assets/alpine-BTHDwFKO.js",
+        "transferSize": 54704,
+        "encodedBodySize": 54404,
+        "decodedBodySize": 54404,
+        "initiatorType": "other"
+      }
+    ],
+    "consoleMessages": [],
+    "alpineInitCount": 1
+  },
+  {
+    "name": "Page",
+    "url": "http://127.0.0.1:8123/page/about",
+    "entries": [
+      {
+        "name": "http://127.0.0.1:8123/build/assets/alpine-BTHDwFKO.js",
+        "transferSize": 54704,
+        "encodedBodySize": 54404,
+        "decodedBodySize": 54404,
+        "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
+        "transferSize": 26389,
+        "encodedBodySize": 26089,
+        "decodedBodySize": 26089,
+        "initiatorType": "other"
+      }
+    ],
+    "consoleMessages": [],
+    "alpineInitCount": 1
+  }
+]

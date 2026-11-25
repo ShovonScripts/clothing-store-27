@@ -41,6 +41,7 @@ class CartDrawer extends Component
         try {
             app(CartService::class)->update($variantId, $qty);
             $this->dispatch('cart-updated');
+            $this->dispatch('cart-count-changed', count: app(CartService::class)->count());
             $this->dispatch('notify', message: 'Cart updated', type: 'success');
         } catch (\InvalidArgumentException $e) {
             $this->dispatch('notify', message: $e->getMessage(), type: 'error');

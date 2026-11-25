@@ -128,7 +128,7 @@ class SeederIdempotencyTest extends TestCase
         $countAfterSecond = Setting::count();
 
         $this->assertEquals($countAfterFirst, $countAfterSecond);
-        $this->assertEquals(25, $countAfterFirst);
+        $this->assertEquals(26, $countAfterFirst);
     }
 
     public function test_role_permission_seeder_is_idempotent(): void

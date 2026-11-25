@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="min-h-screen bg-gray-50">
-    @livewire('storefront.cart-drawer')
+    @livewireLazy('storefront.cart-drawer')
 
     <main class="container mx-auto px-4 py-8">
         <div class="max-w-2xl mx-auto">

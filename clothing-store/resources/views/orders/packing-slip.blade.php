@@ -169,7 +169,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 50%;">{{ __('Product') }}</th>
+                        <th style="width: 50%;">{{ __('global.product') }}</th>
                         <th class="text-center" style="width: 15%;">{{ __('Size') }}</th>
                         <th class="text-center" style="width: 15%;">{{ __('Color') }}</th>
                         <th class="text-center" style="width: 10%;">{{ __('Qty') }}</th>

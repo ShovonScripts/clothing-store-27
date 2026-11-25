@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\DistrictController;
 use App\Http\Controllers\OrderExportController;
+use App\Http\Controllers\Storefront\CartController;
 use App\Http\Controllers\Storefront\CategoryController;
 use App\Http\Controllers\Storefront\HomeController;
 use App\Http\Controllers\Storefront\LocaleController;
@@ -31,6 +32,7 @@ Route::get('/search/suggestions', [ProductController::class, 'suggestions'])->na
 Route::post('/locale', [LocaleController::class, 'switch'])->name('locale.switch');
 
 Route::get('/cart', CartPage::class)->name('cart.page');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::get('/checkout', Checkout::class)->name('checkout');
 Route::get('/order/success/{order}', OrderSuccess::class)->name('order.success');
 Route::get('/track', TrackOrder::class)->name('track.order');

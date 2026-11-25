@@ -33,8 +33,15 @@ class PricingService
             qty: (int) $item['qty'],
         ));
 
-        $lines = collect($lines)->mapWithKeys(function (CartLineData $line) {
-            $variant = ProductVariant::with('product')->find($line->variantId);
+        $variantIds = collect($lines)->pluck('variantId')->unique();
+        $variants = ProductVariant::with(['product', 'color'])
+            ->whereIn('id', $variantIds)
+            ->where('is_active', true)
+            ->get()
+            ->keyBy('id');
+
+        $lines = collect($lines)->mapWithKeys(function (CartLineData $line) use ($variants) {
+            $variant = $variants->get($line->variantId);
 
             if (! $variant) {
                 throw new \InvalidArgumentException("Variant {$line->variantId} not found");
@@ -69,7 +76,7 @@ class PricingService
         $discount = 0;
         $coupon = null;
 
-        if ($couponCode) {
+        if ($couponCode && strlen(trim($couponCode)) > 0) {
             $coupon = Coupon::where('code', strtoupper($couponCode))
                 ->where('is_active', true)
                 ->where('starts_at', '<=', now())

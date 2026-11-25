@@ -8,11 +8,12 @@ use App\Events\OrderPlaced;
 use App\Models\User;
 use App\Notifications\NewOrderNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 
 class NotifyAdminsOfNewOrder implements ShouldQueue
 {
-    use \Illuminate\Queue\InteractsWithQueue;
+    use InteractsWithQueue;
 
     public function handle(OrderPlaced $event): void
     {

@@ -128,6 +128,10 @@ class ProductForm
                                     ->imagePreviewHeight('150')
                                     ->maxSize(5120)
                                     ->maxFiles(10)
+                                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                                    ->imageResizeTargetWidth('1920')
+                                    ->imageResizeTargetHeight('1080')
+                                    ->imageResizeMode('contain')
                                     ->columnSpanFull(),
                             ]),
 

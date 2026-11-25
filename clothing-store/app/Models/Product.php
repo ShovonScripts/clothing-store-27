@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection as SupportCollection;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -146,8 +147,24 @@ class Product extends Model implements HasMedia
 
     public function getFirstImageUrl(string $conversion = 'card'): ?string
     {
+        // Use eager loaded media if available to avoid N+1 queries
+        if ($this->relationLoaded('media')) {
+            $media = $this->getRelation('media')->first();
+
+            return $media?->getUrl($conversion);
+        }
+
         $media = $this->getFirstMedia('gallery');
 
         return $media?->getUrl($conversion);
+    }
+
+    public function getActiveVariantsWithStock(): SupportCollection
+    {
+        if ($this->relationLoaded('variants')) {
+            return $this->variants->where('is_active', true)->where('stock', '>', 0);
+        }
+
+        return $this->activeVariants()->where('stock', '>', 0)->get();
     }
 }

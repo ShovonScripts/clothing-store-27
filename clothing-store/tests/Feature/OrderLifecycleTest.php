@@ -4,18 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Actions\{
-    ApproveOrderAction,
-    CancelOrderAction,
-    MarkCodCollectedAction,
-    MarkDeliveredAction,
-    MarkFailedDeliveryAction,
-    ProcessOrderAction,
-    PlaceOrderAction,
-    ReturnOrderAction,
-    ShipOrderAction,
-    VerifyBkashPaymentAction
-};
+use App\Actions\ApproveOrderAction;
+use App\Actions\MarkCodCollectedAction;
+use App\Actions\MarkDeliveredAction;
+use App\Actions\PlaceOrderAction;
+use App\Actions\ProcessOrderAction;
+use App\Actions\ShipOrderAction;
+use App\Actions\VerifyBkashPaymentAction;
 use App\Data\CartLineData;
 use App\Data\CheckoutData;
 use App\Enums\OrderStatus;
@@ -26,7 +21,6 @@ use App\Models\Category;
 use App\Models\Color;
 use App\Models\District;
 use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\SizeChart;
@@ -43,7 +37,6 @@ use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\SettingsSeeder;
 use Database\Seeders\SizeChartSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -52,10 +45,15 @@ class OrderLifecycleTest extends TestCase
     use RefreshDatabase;
 
     protected District $district;
+
     protected Area $area;
+
     protected Color $color;
+
     protected SizeChart $sizeChart;
+
     protected Product $product;
+
     protected ProductVariant $variant;
 
     protected function setUp(): void

@@ -29,12 +29,12 @@ class OrderResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return __('Orders');
+        return __('global.orders');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Orders');
+        return __('global.orders');
     }
 
     public static function form(Schema $schema): Schema

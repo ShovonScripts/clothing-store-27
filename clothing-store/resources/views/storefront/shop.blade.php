@@ -5,6 +5,6 @@
 @section('content')
 <div class="min-h-screen bg-gray-50">
     @livewire('storefront.shop', ['categorySlug' => $categorySlug ?? ''], key('shop'))
-    @livewire('storefront.cart-drawer')
+    @livewireLazy('storefront.cart-drawer')
 </div>
 @endsection

@@ -28,13 +28,21 @@ class BannerForm
                             ->image()
                             ->directory('banners')
                             ->imagePreviewHeight('150')
-                            ->maxSize(5120),
+                            ->maxSize(5120)
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                            ->imageResizeTargetWidth('1920')
+                            ->imageResizeTargetHeight('1080')
+                            ->imageResizeMode('cover'),
                         FileUpload::make('image_mobile')
                             ->label(__('Mobile Image'))
                             ->image()
                             ->directory('banners')
                             ->imagePreviewHeight('150')
-                            ->maxSize(5120),
+                            ->maxSize(5120)
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                            ->imageResizeTargetWidth('640')
+                            ->imageResizeTargetHeight('1136')
+                            ->imageResizeMode('cover'),
                         TextInput::make('link_url')
                             ->label(__('Link URL'))
                             ->url()
