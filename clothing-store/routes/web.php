@@ -33,6 +33,21 @@ Route::post('/locale', [LocaleController::class, 'switch'])->name('locale.switch
 
 Route::get('/cart', CartPage::class)->name('cart.page');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+
+// Test route for Playwright (only in testing)
+if (app()->environment('testing')) {
+    Route::post('/test/set-cart', function (\Illuminate\Http\Request $request) {
+        $variantId = $request->input('variant_id');
+        $quantity = $request->input('quantity', 1);
+        
+        try {
+            app(\App\Services\CartService::class)->add($variantId, $quantity);
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
+        }
+    })->name('test.set-cart');
+}
 Route::get('/checkout', Checkout::class)->name('checkout');
 Route::get('/order/success/{order}', OrderSuccess::class)->name('order.success');
 Route::get('/track', TrackOrder::class)->name('track.order');
