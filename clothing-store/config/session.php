@@ -214,4 +214,15 @@ return [
 
     'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Re-authentication Idle Timeout
+    |--------------------------------------------------------------------------
+    |
+    | Number of minutes of inactivity after which admin users must re-authenticate.
+    | Set to null to disable. Default: 30 minutes.
+    |
+    */
+    'admin_idle_timeout' => (int) env('SESSION_ADMIN_IDLE_TIMEOUT', 30),
+
 ];

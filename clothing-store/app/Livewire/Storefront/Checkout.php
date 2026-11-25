@@ -11,7 +11,9 @@ use App\Enums\PaymentMethod;
 use App\Models\Area;
 use App\Models\District;
 use App\Services\CartService;
+use App\Services\MetaPixelService;
 use App\Services\PricingService;
+use App\Services\SettingsService;
 use App\Support\PhoneNormalizer;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -49,12 +51,23 @@ class Checkout extends Component
 
     public ?string $error = null;
 
+    public function getBkashAvailableProperty(): bool
+    {
+        return app(SettingsService::class)->isBkashConfigured();
+    }
+
     protected $listeners = ['refresh-pricing' => 'calculatePricing'];
 
     public function mount(): void
     {
         $this->districts = District::where('is_active', true)->orderBy('name')->get(['id', 'name', 'name_bn'])->toArray();
         $this->form['idempotency_token'] = Str::random(8);
+
+        // If bKash is not configured, force COD only
+        if (! $this->bkashAvailable) {
+            $this->form['payment_method'] = PaymentMethod::Cod->value;
+        }
+
         $this->calculatePricing();
     }
 
@@ -81,6 +94,12 @@ class Checkout extends Component
 
     public function updatedFormPaymentMethod(): void
     {
+        // Prevent selecting bKash if not configured
+        if ($this->form['payment_method'] === PaymentMethod::BkashSendMoney->value && ! $this->bkashAvailable) {
+            $this->form['payment_method'] = PaymentMethod::Cod->value;
+            $this->addError('form.payment_method', __('bKash is not configured. Please contact the store.'));
+        }
+
         $this->showBkashFields = $this->form['payment_method'] === PaymentMethod::BkashSendMoney->value;
         $this->calculatePricing();
     }

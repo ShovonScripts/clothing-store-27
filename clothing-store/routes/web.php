@@ -62,3 +62,9 @@ Route::get('/orders/{order}/packing-slip', function (Order $order) {
 Route::get('/admin/orders/export', [OrderExportController::class, 'csv'])
     ->name('orders.export.csv')
     ->middleware('role:owner|manager|staff');
+
+// API for performance measurement
+Route::get('/api/product-slug', function () {
+    $slug = \App\Models\Product::where('is_active', true)->value('slug');
+    return response()->json(['slug' => $slug]);
+})->name('api.product-slug');

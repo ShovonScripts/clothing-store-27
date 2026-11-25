@@ -86,6 +86,10 @@
                 <div class="bg-white rounded-xl border border-gray-100 p-6">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ __('Payment Method') }} <span class="text-red-500">*</span></h2>
 
+                    @php
+                        $bkashAvailable = $this->bkashAvailable;
+                    @endphp
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors {{ $form['payment_method'] === 'cod' ? 'border-primary bg-primary/5' : 'border-gray-200' }}">
                             <input type="radio" wire:model="form.payment_method" value="cod" class="sr-only peer">
@@ -100,18 +104,32 @@
                             </div>
                         </label>
 
-                        <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors {{ $form['payment_method'] === 'bkash_send_money' ? 'border-primary bg-primary/5' : 'border-gray-200' }}">
-                            <input type="radio" wire:model="form.payment_method" value="bkash_send_money" class="sr-only peer">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-pink-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93z"/></svg>
+                        @if ($bkashAvailable)
+                            <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors {{ $form['payment_method'] === 'bkash_send_money' ? 'border-primary bg-primary/5' : 'border-gray-200' }}">
+                                <input type="radio" wire:model="form.payment_method" value="bkash_send_money" class="sr-only peer">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-pink-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93z"/></svg>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-900">{{ __('bKash Send Money') }}</span>
+                                        <p class="text-xs text-gray-500">{{ __('Pay via bKash, then enter TrxID') }}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span class="text-sm font-medium text-gray-900">{{ __('bKash Send Money') }}</span>
-                                    <p class="text-xs text-gray-500">{{ __('Pay via bKash, then enter TrxID') }}</p>
+                            </label>
+                        @else
+                            <div class="relative flex items-center p-4 border-2 rounded-xl bg-gray-50 border-gray-200 cursor-not-allowed opacity-70">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93z"/></svg>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-500">{{ __('bKash Send Money') }}</span>
+                                        <p class="text-xs text-gray-400">{{ __('Not configured') }}</p>
+                                    </div>
                                 </div>
                             </div>
-                        </label>
+                        @endif
                     </div>
                 </div>
 
@@ -121,7 +139,7 @@
                         <h3 class="text-lg font-medium text-pink-800 mb-4">{{ __('bKash Payment Details') }}</h3>
                         <p class="text-sm text-pink-700 mb-4">{{ __('Send money to the number shown, then enter the TrxID and sender number below.') }}</p>
                         <p class="text-sm font-semibold text-pink-800 mb-4">
-                            {{ __('Store bKash number') }}: <span class="font-mono">{{ settings('bkash_number', '01XXXXXXXXX') }}</span>
+                            {{ __('Store bKash number') }}: <span class="font-mono">{{ settings('bkash_number') }}</span>
                         </p>
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

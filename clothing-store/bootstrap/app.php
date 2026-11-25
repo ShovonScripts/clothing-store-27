@@ -12,9 +12,12 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware) {
-        $middleware->append(SecurityHeaders::class);
-        $middleware->web(append: CaptureUtmParameters::class);
+->withMiddleware(function (Middleware $middleware) {
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->web(append: \App\Http\Middleware\CaptureUtmParameters::class);
+        $middleware->alias([
+            'admin.idle-timeout' => \App\Http\Middleware\AdminIdleTimeout::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

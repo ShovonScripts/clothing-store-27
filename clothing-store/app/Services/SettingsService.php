@@ -97,7 +97,22 @@ class SettingsService
 
     public function bkashNumber(): string
     {
-        return $this->get('bkash_number', '01XXXXXXXXX');
+        return $this->get('bkash_number', '');
+    }
+
+    public function isBkashNumberValid(): bool
+    {
+        $number = $this->bkashNumber();
+        if (empty($number)) {
+            return false;
+        }
+        // Must be valid BD mobile: 01[3-9]XXXXXXXX (11 digits starting with 013-019)
+        return preg_match('/^01[3-9]\d{8}$/', $number) === 1;
+    }
+
+    public function isBkashConfigured(): bool
+    {
+        return $this->bkashEnabled() && $this->isBkashNumberValid();
     }
 
     public function bkashInstructions(string $locale = 'bn'): string

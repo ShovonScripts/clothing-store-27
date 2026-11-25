@@ -26,17 +26,17 @@
     "url": "http://127.0.0.1:8123/shop",
     "entries": [
       {
-        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
-        "transferSize": 26389,
-        "encodedBodySize": 26089,
-        "decodedBodySize": 26089,
-        "initiatorType": "other"
-      },
-      {
         "name": "http://127.0.0.1:8123/build/assets/app-29BXfh2o.js",
         "transferSize": 58039,
         "encodedBodySize": 57739,
         "decodedBodySize": 57739,
+        "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
+        "transferSize": 26389,
+        "encodedBodySize": 26089,
+        "decodedBodySize": 26089,
         "initiatorType": "other"
       },
       {
@@ -52,7 +52,7 @@
   },
   {
     "name": "Product",
-    "url": "http://127.0.0.1:8123/product/classic-cotton-crew-neck-t-shirt",
+    "url": "http://127.0.0.1:8123/product/product-prod_6b06b15fbda332.59397202",
     "entries": [
       {
         "name": "http://127.0.0.1:8123/build/assets/app-29BXfh2o.js",
@@ -84,17 +84,17 @@
     "url": "http://127.0.0.1:8123/search?q=shirt",
     "entries": [
       {
-        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
-        "transferSize": 26389,
-        "encodedBodySize": 26089,
-        "decodedBodySize": 26089,
-        "initiatorType": "other"
-      },
-      {
         "name": "http://127.0.0.1:8123/build/assets/alpine-BTHDwFKO.js",
         "transferSize": 54704,
         "encodedBodySize": 54404,
         "decodedBodySize": 54404,
+        "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
+        "transferSize": 26389,
+        "encodedBodySize": 26089,
+        "decodedBodySize": 26089,
         "initiatorType": "other"
       }
     ],
@@ -106,17 +106,17 @@
     "url": "http://127.0.0.1:8123/categories",
     "entries": [
       {
-        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
-        "transferSize": 26389,
-        "encodedBodySize": 26089,
-        "decodedBodySize": 26089,
-        "initiatorType": "other"
-      },
-      {
         "name": "http://127.0.0.1:8123/build/assets/alpine-BTHDwFKO.js",
         "transferSize": 54704,
         "encodedBodySize": 54404,
         "decodedBodySize": 54404,
+        "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/build/assets/module.esm-BeXXK3g7.js",
+        "transferSize": 26389,
+        "encodedBodySize": 26089,
+        "decodedBodySize": 26089,
         "initiatorType": "other"
       }
     ],
@@ -126,12 +126,19 @@
   {
     "name": "Page",
     "url": "http://127.0.0.1:8123/page/about",
+    "entries": [],
+    "consoleMessages": [],
+    "alpineInitCount": 0
+  },
+  {
+    "name": "Checkout",
+    "url": "http://127.0.0.1:8123/checkout",
     "entries": [
       {
-        "name": "http://127.0.0.1:8123/build/assets/alpine-BTHDwFKO.js",
-        "transferSize": 54704,
-        "encodedBodySize": 54404,
-        "decodedBodySize": 54404,
+        "name": "http://127.0.0.1:8123/build/assets/app-29BXfh2o.js",
+        "transferSize": 58039,
+        "encodedBodySize": 57739,
+        "decodedBodySize": 57739,
         "initiatorType": "other"
       },
       {
@@ -140,9 +147,21 @@
         "encodedBodySize": 26089,
         "decodedBodySize": 26089,
         "initiatorType": "other"
+      },
+      {
+        "name": "http://127.0.0.1:8123/livewire-d3b1056d/livewire.js?id=102cd394",
+        "transferSize": 610395,
+        "encodedBodySize": 610095,
+        "decodedBodySize": 610095,
+        "initiatorType": "script"
       }
     ],
-    "consoleMessages": [],
+    "consoleMessages": [
+      {
+        "type": "warning",
+        "text": "Alpine Expression Error: processing is not defined\n\nExpression: \"processing\"\n\n JSHandle@node"
+      }
+    ],
     "alpineInitCount": 1
   }
 ]

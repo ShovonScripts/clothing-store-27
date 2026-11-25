@@ -2,9 +2,9 @@
 <div wire:ignore.self class="fixed inset-0 z-50 lg:hidden" wire:click="close" aria-hidden="true">
     <div class="absolute inset-0 bg-black/50 transition-opacity" aria-hidden="true"></div>
 
-    <div class="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-xl transition-transform" wire:click="$event.stopPropagation()">
+    <div class="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white shadow-xl transition-transform" wire:click="$event.stopPropagation()" x-trap.inert="true" role="dialog" aria-modal="true" aria-labelledby="cart-title">
         <div class="flex items-center justify-between p-4 border-b">
-            <h2 class="text-lg font-semibold text-gray-900">{{ __('global.cart') }} ({{ $count }})</h2>
+            <h2 id="cart-title" class="text-lg font-semibold text-gray-900">{{ __('global.cart') }} ({{ $count }})</h2>
             <button wire:click="close" class="text-gray-400 hover:text-gray-600" aria-label="{{ __('cart.close_cart') }}">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

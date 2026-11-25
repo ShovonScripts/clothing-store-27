@@ -52,13 +52,20 @@ async function measurePage(url, name) {
 
 async function main() {
   const baseUrl = 'http://127.0.0.1:8123';
+  
+  // Get product slug dynamically
+  const slugResponse = await fetch(`${baseUrl}/api/product-slug`);
+  const slugData = await slugResponse.json();
+  const productSlug = slugData.slug || 'product-prod_6b06b15fbda332.59397202';
+
   const pages = [
     { url: `${baseUrl}/`, name: 'Home' },
     { url: `${baseUrl}/shop`, name: 'Shop' },
-    { url: `${baseUrl}/product/classic-cotton-crew-neck-t-shirt`, name: 'Product' },
+    { url: `${baseUrl}/product/${productSlug}`, name: 'Product' },
     { url: `${baseUrl}/search?q=shirt`, name: 'Search' },
     { url: `${baseUrl}/categories`, name: 'Categories' },
     { url: `${baseUrl}/page/about`, name: 'Page' },
+    { url: `${baseUrl}/checkout`, name: 'Checkout' },
   ];
 
   const results = [];

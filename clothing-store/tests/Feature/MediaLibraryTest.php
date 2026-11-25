@@ -13,6 +13,7 @@ use Database\Seeders\SizeChartSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Spatie\MediaLibrary\MediaCollections\Exceptions\FileNameNotAllowed;
 use Spatie\MediaLibrary\MediaCollections\Exceptions\FileUnacceptableForCollection;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Tests\TestCase;
@@ -114,7 +115,7 @@ class MediaLibraryTest extends TestCase
         // Try to upload a non-image file (should be rejected by acceptsMimeTypes)
         $file = UploadedFile::fake()->create('document.pdf', 100, 'application/pdf');
 
-        $this->expectException(FileUnacceptableForCollection::class);
+        $this->expectException(FileNameNotAllowed::class);
 
         $product->addMedia($file)
             ->toMediaCollection('gallery');
