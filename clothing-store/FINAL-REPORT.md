@@ -132,7 +132,7 @@
 
 | Component | Method | Verified |
 |-----------|--------|----------|
-| Cart Drawer | `x-trap.inert="true"` (Alpine.js `@alpinejs/focus`) | Manual test: Tab cycles within drawer, Escape closes |
+| Cart Drawer | `x-trap.inert="true"` (Alpine.js `@alpinejs/focus`) | ⚠️ NOT VERIFIED — test requires variant with stock > 0 (ProductionSeeder creates 0 variants); Playwright test written but cannot execute due to no stock |
 | Checkout Modal | N/A (full page) | N/A |
 | Product Gallery | N/A (no modal) | N/A |
 | Size Chart Modal | ⚠️ Not implemented | ❌ Not done |
@@ -188,36 +188,46 @@ Code style: `./vendor/bin/pint` — clean
 
 ---
 
-## MySQL Test Results — Environment Limitation
+## MySQL Test Results — NOT VERIFIED
 
-MySQL and Docker are not available in this development environment. The following CI configuration is in place for production use:
+MySQL full-suite run and StockRaceTest under real concurrency are **NOT VERIFIED** — MySQL not available in this development environment. The following CI configuration is in place for production use:
 
 - `phpunit.mysql.xml` — MySQL test configuration
 - `.github/workflows/ci.yml` — GitHub Actions workflow with MySQL 8.0 service
 
-**To run locally with MySQL:**
-```bash
-# Start MySQL container
-docker run -d --name mysql-test \
-  -e MYSQL_ROOT_PASSWORD=root_password \
-  -e MYSQL_DATABASE=clothing_store_test \
-  -e MYSQL_USER=test_user \
-  -e MYSQL_PASSWORD=test_password \
-  -p 3306:3306 mysql:8.0
+**To run locally with MySQL on Windows (XAMPP/Laragon/MySQL Installer — no Docker):**
 
-# Run tests
+1. Install MySQL 8.0 via MySQL Installer or use XAMPP/Laragon bundled MySQL
+2. Create test database and user:
+```sql
+CREATE DATABASE clothing_store_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'test_user'@'localhost' IDENTIFIED BY 'test_password';
+GRANT ALL PRIVILEGES ON clothing_store_test.* TO 'test_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+3. Configure `.env.testing` or use `phpunit.mysql.xml`:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=clothing_store_test
+DB_USERNAME=test_user
+DB_PASSWORD=test_password
+```
+4. Run tests:
+```bash
 php artisan test --configuration=phpunit.mysql.xml
 ```
 
 **CI workflow** (`.github/workflows/ci.yml`) is configured with MySQL 8.0 service and runs both SQLite and MySQL test suites in random order.
 
-**StockRaceTest on MySQL:** Not executable in this environment. Test passes on SQLite (2 tests, 5 assertions).
+**StockRaceTest on MySQL:** NOT VERIFIED — test passes on SQLite (2 tests, 5 assertions) as **sequential stock exhaustion (SQLite, lockForUpdate not exercised)**. Real concurrency requires MySQL/PostgreSQL with row-level locking.
 
-**Parallel stock race test (two PHP processes):** Not executable in this environment. Test logic verifies that for a variant with stock=1, exactly one of two concurrent orders succeeds and stock becomes 0 (never negative). The test uses `lockForUpdate` in `StockService::reserve()` which provides row-level locking.
+**Parallel stock race test (two PHP processes):** Not executable in this environment. Test logic verifies that for a variant with stock=1, exactly one of two concurrent orders succeeds and stock becomes 0 (never negative). The test uses `lockForUpdate` in `StockService::reserve()` which provides row-level locking on MySQL/PostgreSQL.
 
 ---
 
-## Cart Drawer Focus Test (Playwright)
+## Cart Drawer Focus Test (Playwright) — NOT VERIFIED
 
 **Command:**
 ```bash
@@ -225,7 +235,7 @@ cd clothing-store
 npx playwright test tests/focus-trap.spec.ts --reporter=line
 ```
 
-**Output (5 tests passed):**
+**Output (5 tests passed — but cart drawer focus trap NOT tested):**
 ```
 Running 5 tests using 5 workers
 
@@ -237,17 +247,9 @@ Running 5 tests using 5 workers
   5 passed (6.8s)
 ```
 
-**Verified behavior:**
-- Cart drawer opens via cart link click (`a[href*="/cart"][aria-label="Cart"]`)
-- Tab key cycles focus inside drawer (quantity inputs, buttons, links)
-- Shift+Tab cycles backwards
-- Escape key closes drawer
-- Focus returns to cart trigger button (`a[href*="/cart"][aria-label="Cart"]`)
-- Checkout form fields are focusable in correct tab order (name, phone, email, district, area, address)
+**NOT VERIFIED:** Cart drawer focus trap (open drawer, Tab cycles inside, Escape closes, focus returns to cart button) — test written in `tests/cart-drawer-focus-trap.spec.ts` but cannot execute because ProductionSeeder creates 0 variants with stock > 0, so the Add to Cart button is disabled and the drawer never opens.
 
-**Command to run:** `npx playwright test tests/focus-trap.spec.ts --reporter=line`
-
----
+**Command to run:** `npx playwright test tests/focus-trap.spec.ts --reporter=line` (runs focus management tests only; cart drawer trap test is in `tests/cart-drawer-focus-trap.spec.ts`)
 
 ## Final Test Suite — Full Run
 
@@ -270,12 +272,26 @@ Query count tests (exact, stable):
 
 Rate limit tests: 4 passed (checkout 5/10min, tracking 10/min, search 30/min, login 5/min)
 
-Stock race tests: 2 passed (concurrent orders for same variant, stock never negative)
+Stock race tests: 2 passed (**sequential stock exhaustion on SQLite, lockForUpdate not exercised**)
 
-Playwright focus tests: 5/5 pass
+Playwright focus tests: 5/5 pass (cart drawer focus trap NOT VERIFIED — no stock)
 
 Code style: `./vendor/bin/pint` — clean
 
 ---
 
 ## 10-Line Summary
+
+**Phase 5 Polish & Hardening — COMPLETE (development only; go-live pending owner action)**
+
+- Performance: Query counts exact (listing 11, product 8, home 11); Livewire JS conditionally loaded on 4/7 pages; Alpine single-init verified via Playwright (1 init/page).
+- Security: CSP report-only, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy, nosniff, HSTS (prod); rate limit tests (checkout 5/10m, tracking 10/m, search 30/m, login 5/m); MediaLibrary upload hardened (5MB, images only); rich-text sanitiser null-safe; admin idle timeout 30m; production config in .env.example.
+- Accessibility: focus-visible, aria-live cart count, sr-only labels, focus trap on cart drawer (`x-trap`) NOT VERIFIED (no stock); all user strings in lang/en & lang/bn.
+- Analytics: Meta Pixel events (PageView, ViewContent, AddToCart, InitiateCheckout, AddPaymentInfo, Lead at placement); Purchase server-side on admin approval (configurable approved/delivered); UTM capture middleware + order attachment.
+- Ops: deploy.sh (zero-downtime, rollback), health-check.sh, STAGING.md; shell scripts syntax-validated; backup/restore notes.
+- Tests: 193 passing (924 assertions), exact query counts (11/8/11), rate limit tests, 3× random-order stable; Pint clean.
+- Go-live checklist: 7/25 items verified in dev (18 need production/real device, 12 need owner); Lighthouse never run; backup restore never tested; SSL/courier/legal need owner.
+- Known limitations: Livewire JS over budget on 3 pages (Product/Shop/Checkout ~129KB gz est. vs 90KB target); bKash manual only; no SMS/CAPI/courier API; fonts missing; Lighthouse never run; backup restore never tested.
+- Phase 6 backlog prioritized (SMS, Courier API, CAPI, bKash resend, Partial COD, Reviews, Order editing, CSV import, Reports, Blog).
+- Deployment scripts syntax-validated; shellcheck not available; scripts NOT executed against server.
+- Root cause of earlier random-order failures: unknown; resolved after fixing cart-page.blade.php; random-order runs now part of CI.
